@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Tahap 1 — Data Induk: Build all master-data APIs and UIs — player management, group configuration, admin management, kas categories, activity log, and password management. Requires FEAT-001 (auth, DB, schema). Covers T1.1 through T1.10. Independent from FEAT-003 except T1.2 grup-context resolver which FEAT-003 also needs.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "1. Create `src/db/schema/master.ts` with tables: `pemain` (id, grup_id, nama, no_hp, catatan, bebas_biaya boolean default false, aktif boolean default true, dibuat_pada, diperbarui_pada). Export from `src/db/schema/index.ts`. Run `pnpm db:generate` to create migration.",
     "2. Create `src/features/auth/get-grup-context.ts`: helper that reads the session cookie from request headers, verifies it with `verify-session.ts`, and returns `{ adminId, grupId }`. Throws 401 if no valid session. This is the single grup-context resolver all API routes must use.",
@@ -38,5 +38,5 @@
     "pnpm vitest run"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 18 steps implemented. Fixed Zod v4 incompatibility: z.enum does not accept `errorMap` — replaced with `error` string param. pnpm db:generate created migration for pemain table (8 tables total). pnpm build passed with zero TypeScript errors, all 24 routes rendered. pnpm vitest run: 8/8 tests passed."
 }

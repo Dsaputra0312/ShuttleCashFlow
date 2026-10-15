@@ -1,0 +1,117 @@
+import { NextRequest } from 'next/server';
+import { z } from 'zod';
+import { eq, and, ilike, count, asc, desc } from 'drizzle-orm';
+import { db } from '@/db';
+import { pemain } from '@/db/schema';
+import { getGrupContext } from '@/features/auth/get-grup-context';
+import { logActivity } from '@/features/activity-log/log-activity';
+import { parseListQuery } from '@/lib/query-helpers';
+import { successResponse, paginatedResponse, errorResponse } from '@/lib/api-response';
+
+const createPemainSchema = z.object({
+  nama: z.string().min(1, 'Nama wajib diisi'),
+  no_hp: z.string().optional(),
+  catatan: z.string().optional(),
+  bebas_biaya: z.boolean().optional().default(false),
+});
+
+export async function GET(request: NextRequest) {
+  let ctx;
+  try {
+    ctx = await getGrupContext();
+  } catch (res) {
+    return res as Response;
+  }
+
+  const parsed = parseListQuery(request.nextUrl.searchParams);
+  if (!parsed.ok) return parsed.response;
+
+  const { page, per_page, search, sort, sort_dir } = parsed.query;
+  const offset = (page - 1) * per_page;
+
+  try {
+    const dbClient = db();
+    const conditions = search
+      ? and(eq(pemain.grup_id, ctx.grupId), ilike(pemain.nama, `%${search}%`))
+      : eq(pemain.grup_id, ctx.grupId);
+
+    const sortCol = sort === 'aktif' ? pemain.aktif : pemain.nama;
+    const orderFn = sort_dir === 'desc' ? desc : asc;
+
+    const [totalRows, rows] = await Promise.all([
+      dbClient.select({ count: count() }).from(pemain).where(conditions),
+      dbClient
+        .select()
+        .from(pemain)
+        .where(conditions)
+        .orderBy(orderFn(sortCol))
+        .limit(per_page)
+        .offset(offset),
+    ]);
+
+    const total = totalRows[0]?.count ?? 0;
+
+    return paginatedResponse(rows, {
+      page,
+      per_page,
+      total,
+      total_pages: Math.ceil(total / per_page),
+    });
+  } catch (err) {
+    console.error('[GET /pemain]', err);
+    return errorResponse('Terjadi kesalahan server', undefined, 500);
+  }
+}
+
+export async function POST(request: NextRequest) {
+  let ctx;
+  try {
+    ctx = await getGrupContext();
+  } catch (res) {
+    return res as Response;
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return errorResponse('Request body tidak valid', undefined, 400);
+  }
+
+  const parsed = createPemainSchema.safeParse(body);
+  if (!parsed.success) {
+    const errors: Record<string, string[]> = {};
+    for (const issue of parsed.error.issues) {
+      const key = issue.path.join('.');
+      errors[key] = errors[key] ? [...errors[key], issue.message] : [issue.message];
+    }
+    return errorResponse('Validasi gagal', errors, 422);
+  }
+
+  try {
+    const rows = await db()
+      .insert(pemain)
+      .values({
+        grup_id: ctx.grupId,
+        nama: parsed.data.nama,
+        no_hp: parsed.data.no_hp ?? null,
+        catatan: parsed.data.catatan ?? null,
+        bebas_biaya: parsed.data.bebas_biaya,
+      })
+      .returning();
+
+    await logActivity({
+      grupId: ctx.grupId,
+      adminId: ctx.adminId,
+      aksi: 'CREATE',
+      entitas: 'pemain',
+      entitasId: rows[0].id,
+      detail: { nama: rows[0].nama },
+    });
+
+    return successResponse(rows[0], 'Pemain berhasil ditambahkan', 201);
+  } catch (err) {
+    console.error('[POST /pemain]', err);
+    return errorResponse('Terjadi kesalahan server', undefined, 500);
+  }
+}
