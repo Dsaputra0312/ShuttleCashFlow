@@ -45,6 +45,9 @@ function PertemuanDetailPageInner() {
   const [pertemuan, setPertemuan] = useState<Pertemuan | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Salin Rekap
+  const [rekapLoading, setRekapLoading] = useState(false);
+
   // Lock/Unlock
   const [kunciLoading, setKunciLoading] = useState(false);
   const [bukaKunciOpen, setBukaKunciOpen] = useState(false);
@@ -121,6 +124,24 @@ function PertemuanDetailPageInner() {
     }
   };
 
+  const handleSalinRekap = async () => {
+    setRekapLoading(true);
+    try {
+      const res = await fetch(`/api/v1/pertemuan/${pertemuanId}/rekap`);
+      const json = await res.json();
+      if (res.ok && json.data?.teks) {
+        await navigator.clipboard.writeText(json.data.teks);
+        addToast('Rekap disalin!', 'success');
+      } else {
+        addToast(json.message ?? 'Gagal memuat rekap', 'error');
+      }
+    } catch {
+      addToast('Terjadi kesalahan', 'error');
+    } finally {
+      setRekapLoading(false);
+    }
+  };
+
   const setTab = (tab: Tab) => {
     const url = new URL(window.location.href);
     url.searchParams.set('tab', tab);
@@ -178,17 +199,27 @@ function PertemuanDetailPageInner() {
               variant={pertemuan.terkunci ? 'default' : 'success'}
             />
             {pertemuan.terkunci ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setAlasanBukaKunci('');
-                  setBukaKunciError(null);
-                  setBukaKunciOpen(true);
-                }}
-              >
-                Buka Kunci
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={rekapLoading}
+                  onClick={handleSalinRekap}
+                >
+                  Salin Rekap
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    setAlasanBukaKunci('');
+                    setBukaKunciError(null);
+                    setBukaKunciOpen(true);
+                  }}
+                >
+                  Buka Kunci
+                </Button>
+              </>
             ) : (
               <Button
                 size="sm"
