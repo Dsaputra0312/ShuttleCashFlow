@@ -1,0 +1,42 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Tahap 1 — Data Induk: Build all master-data APIs and UIs — player management, group configuration, admin management, kas categories, activity log, and password management. Requires FEAT-001 (auth, DB, schema). Covers T1.1 through T1.10. Independent from FEAT-003 except T1.2 grup-context resolver which FEAT-003 also needs.",
+  "status": "pending",
+  "steps": [
+    "1. Create `src/db/schema/master.ts` with tables: `pemain` (id, grup_id, nama, no_hp, catatan, bebas_biaya boolean default false, aktif boolean default true, dibuat_pada, diperbarui_pada). Export from `src/db/schema/index.ts`. Run `pnpm db:generate` to create migration.",
+    "2. Create `src/features/auth/get-grup-context.ts`: helper that reads the session cookie from request headers, verifies it with `verify-session.ts`, and returns `{ adminId, grupId }`. Throws 401 if no valid session. This is the single grup-context resolver all API routes must use.",
+    "3. Create `src/app/api/v1/konfigurasi/route.ts` (GET, PUT): GET returns current konfigurasi_grup for the session's grup. PUT validates body with Zod (all fields integer, non-negative), upserts konfigurasi_grup. Return standard response.",
+    "4. Create `src/app/api/v1/pemain/route.ts` (GET, POST): GET uses `parseListQuery` for pagination/search/sort on `pemain.nama`, returns paginated list scoped to grup_id. POST validates nama (required), no_hp (optional), catatan (optional), bebas_biaya (optional boolean), inserts new pemain.",
+    "5. Create `src/app/api/v1/pemain/[id]/route.ts` (GET, PUT, DELETE): GET returns single pemain. PUT updates nama, no_hp, catatan, bebas_biaya. DELETE sets aktif=false (soft delete — never hard delete). All scoped to grup_id.",
+    "6. Create `src/app/api/v1/admin/route.ts` (GET, POST): list all admins for grup, add new admin (nama, email, password hashed). Create `src/app/api/v1/admin/[id]/route.ts` (PUT, DELETE): PUT updates nama/email; DELETE sets aktif=false but rejects if this is the only active admin.",
+    "7. Create `src/app/api/v1/admin/[id]/reset-password/route.ts` (POST): another admin resets target admin's password. Requires alasan in body. Create `src/app/api/v1/auth/change-password/route.ts` (POST): admin changes own password (requires current password verification).",
+    "8. Create `src/app/api/v1/kategori-kas/route.ts` (GET, POST) and `src/app/api/v1/kategori-kas/[id]/route.ts` (PUT, DELETE): GET lists all categories for grup. POST creates new custom category. PUT updates non-system categories. DELETE soft-deletes but rejects if `adalah_sistem=true`.",
+    "9. Create `src/features/activity-log/log-activity.ts`: async helper `logActivity({ grupId, adminId, aksi, entitas, entitasId, detail, alasan })` that inserts a row to `log_aktivitas`. All mutating API handlers must call this.",
+    "10. Create `src/app/api/v1/log/route.ts` (GET): paginated list of `log_aktivitas` scoped to grup_id, sorted by dibuat_pada DESC, with search on `aksi`.",
+    "11. Create `src/app/(protected)/lainnya/konfigurasi/page.tsx`: form with all konfigurasi fields. On submit calls PUT /api/v1/konfigurasi, shows success/error toast. On mount calls GET /api/v1/konfigurasi to prefill.",
+    "12. Create `src/app/(protected)/pemain/page.tsx` (replaces placeholder): list view with search input, paginated cards. Each card shows nama, status (aktif/nonaktif), bebas_biaya badge. Floating Action Button to add player. Tap card to open edit bottom sheet.",
+    "13. Create `src/components/pemain/PemainForm.tsx`: reusable form bottom sheet for add/edit pemain. Fields: nama (required), no_hp, catatan, bebas_biaya toggle. Uses Zod client-side validation. On submit calls POST or PUT endpoint.",
+    "14. Create `src/app/(protected)/lainnya/admin/page.tsx`: list of admins with add admin bottom sheet. Each admin row has deactivate button (guarded: cannot deactivate self if sole active admin).",
+    "15. Create `src/app/(protected)/lainnya/kategori-kas/page.tsx`: list of kas categories with tipe (pemasukan/pengeluaran) badges. System categories shown with lock icon (no delete). Add/edit bottom sheet for custom categories.",
+    "16. Create `src/app/(protected)/lainnya/log/page.tsx`: paginated log list showing aksi, entitas, admin nama, alasan, dibuat_pada. Search by aksi.",
+    "17. Create `src/app/(protected)/lainnya/page.tsx` (replaces placeholder): menu list with navigation links to Konfigurasi, Admin, Kategori Kas, Log, Ubah Kata Sandi.",
+    "18. Create `src/app/(protected)/lainnya/ubah-kata-sandi/page.tsx`: form with current password, new password, confirm new password. Calls POST /api/v1/auth/change-password."
+  ],
+  "acceptance_criteria": [
+    "`pnpm db:generate` creates migration for `pemain` table successfully",
+    "GET /api/v1/pemain returns paginated list scoped to grup_id",
+    "POST /api/v1/pemain with missing `nama` returns 422 with { message, errors }",
+    "DELETE /api/v1/admin/{id} returns 400 when target is the only active admin",
+    "DELETE /api/v1/kategori-kas/{id} returns 400 when category is_sistem=true",
+    "All 5 Lainnya sub-pages render without errors at 360px",
+    "`pnpm build` completes with zero errors after this FEAT"
+  ],
+  "verification": [
+    "pnpm db:generate",
+    "pnpm build",
+    "pnpm vitest run"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

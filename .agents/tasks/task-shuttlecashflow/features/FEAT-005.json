@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-005",
+  "type": "feat",
+  "description": "Tahap 4 — Dashboard dan Rekap: Build the home dashboard API and UI (cash balance, stock, income/expense summary, filter daily/monthly, recent transactions, last game summary), plus the WhatsApp recap generator (pure function) with unit tests, and the copy-recap button on pertemuan detail. Requires FEAT-004 (all kas and game data). Covers T4.1 through T4.4.",
+  "status": "pending",
+  "steps": [
+    "1. Create `src/app/api/v1/dashboard/route.ts` (GET): accepts query params `filter` ('harian'|'bulanan') and `tanggal` (ISO date string, defaults to today in WIB). Compute: (a) saldo_kas = SUM(pemasukan) - SUM(pengeluaran) across all time, (b) stok_bola current (reuse stok calculation), (c) total_pemasukan for the filter period, (d) total_pengeluaran for the filter period, (e) transaksi_terbaru (last 5 transaksi_kas), (f) ringkasan_pertemuan_terakhir (most recent pertemuan: tanggal, jumlah_pemain, total_tagihan). All scoped to grup_id. Return standard { data, meta, message } response. (T4.1)",
+    "2. Create `src/app/(protected)/page.tsx` (replaces placeholder Beranda): filter toggle (Harian / Bulanan) with date/month picker. Cards: Saldo Kas, Stok Bola, Total Pemasukan, Total Pengeluaran. Section: Transaksi Terbaru (5 rows). Section: Ringkasan Pertemuan Terakhir. Filter change does NOT cause full-page flicker — use React state with loading skeleton. (T4.2)",
+    "3. Create `src/features/whatsapp/recap-generator.ts`: pure function `generateRekapWhatsApp(pertemuan: PertemuanData, sesiList: SesiData[], pesertaList: PesertaData[]): string`. Format per Req §7: header with date, list of sesi with players and ball count, per-player billing summary including penanggung bola notation, total. No DB imports — pure data transformation. (T4.3)",
+    "4. Create `src/features/whatsapp/recap-generator.test.ts`: Vitest unit test using the Req §5 example data. Verify the output string matches the expected WhatsApp format for all players (Andi, Budi, Cici, Dedi, Eko, Fani) with correct amounts and penanggung notation. Run `pnpm vitest run src/features/whatsapp/recap-generator.test.ts` — must pass. (T4.3)",
+    "5. Create `src/app/api/v1/pertemuan/[id]/rekap/route.ts` (GET): loads pertemuan + all sesi + all peserta from DB, calls `generateRekapWhatsApp()`, returns `{ data: { teks: string }, meta: { pagination: null }, message: 'OK' }`. (T4.4)",
+    "6. Add 'Salin Rekap' button to `src/app/(protected)/pertemuan/[id]/page.tsx`: calls GET /api/v1/pertemuan/{id}/rekap, copies result to clipboard using `navigator.clipboard.writeText()`, shows success toast 'Rekap disalin!'. Button only visible when pertemuan is terkunci. (T4.4)"
+  ],
+  "acceptance_criteria": [
+    "`pnpm vitest run src/features/whatsapp/recap-generator.test.ts` passes",
+    "GET /api/v1/dashboard returns all required fields (saldo_kas, stok_bola, total_pemasukan, total_pengeluaran, transaksi_terbaru, ringkasan_pertemuan_terakhir)",
+    "Dashboard filter toggle (Harian/Bulanan) updates numbers without full-page flicker",
+    "Salin Rekap button only visible for terkunci pertemuan and copies text to clipboard",
+    "`pnpm build` completes with zero errors after this FEAT",
+    "`pnpm vitest run` passes all tests"
+  ],
+  "verification": [
+    "pnpm vitest run src/features/whatsapp/recap-generator.test.ts",
+    "pnpm vitest run",
+    "pnpm build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

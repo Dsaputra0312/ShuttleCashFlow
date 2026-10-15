@@ -1,0 +1,37 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Tahap 2 (T2.1–T2.6) + Tahap 3 (T3.1–T3.3) — Game core DB schema, billing calculation engine, session APIs, early financial schema, iuran API, and auto-transaction service. This FEAT must be done before FEAT-004 because T2.7+ (Selesai Main, payment) depend on the iuran/member-status and kas auto-transaction logic built here. Pure-function calculation engine with full Vitest coverage per Req §5 example.",
+  "status": "pending",
+  "steps": [
+    "1. Create `src/db/schema/game.ts` with tables: `pertemuan` (id, grup_id, tanggal date, konfigurasi_snapshot jsonb, terkunci boolean default false, dibuat_pada, diperbarui_pada), `sesi` (id, pertemuan_id, grup_id, lapangan smallint, bola_terpakai smallint, ditanggung_oleh_pemain_id nullable FK, dibuat_pada), `sesi_pemain` (id, sesi_id, pemain_id, grup_id), `peserta_pertemuan` (id, pertemuan_id, pemain_id, grup_id, status_main: 'bermain'|'selesai'|'lunas', tagihan integer default 0, dibayar integer default 0, metode_bayar nullable, selesai_pada nullable). Add indexes on grup_id, pertemuan_id, pemain_id. Export from schema/index.ts. Run `pnpm db:generate`.",
+    "2. Create `src/db/schema/finance.ts` with tables: `iuran` (id, grup_id, pemain_id, periode_tahun smallint, periode_bulan smallint, nominal integer, dibuat_pada — UNIQUE on grup_id+pemain_id+periode_tahun+periode_bulan), `transaksi_kas` (id, grup_id, kategori_id, nominal integer, tipe: 'pemasukan'|'pengeluaran', keterangan, referensi_tipe nullable, referensi_id nullable, pertemuan_id nullable FK, dapat_diubah boolean default true, dibuat_pada, dibuat_oleh_admin_id), `pembelian_bola` (id, grup_id, jumlah_tabung smallint, isi_per_tabung smallint, harga_total integer, transaksi_kas_id FK, dibuat_pada), `koreksi_stok` (id, grup_id, jumlah integer (can be negative), alasan text not null, dibuat_oleh_admin_id, dibuat_pada). Export from schema/index.ts. Run `pnpm db:generate`.",
+    "3. Create `src/features/billing/types.ts`: TypeScript interfaces for the billing engine — `SesiInput`, `PemainInput`, `KonfigurasiInput`, `TagihanPemain`, `HasilPerhitunganPertemuan`. No DB imports — pure data shapes.",
+    "4. Create `src/features/billing/calculator.ts`: pure function `hitungTagihan(sesiList: SesiInput[], pemainList: PemainInput[], config: KonfigurasiInput): HasilPerhitunganPertemuan`. Logic per Req §4.2–4.4: (a) count each player's total sessions, (b) each session: calculate ball cost = bola_terpakai × harga_bola_per_biji divided equally among session players (non-member + non-bearer pay; member pays 0 for ball; bearer pays all ball cost), (c) lapangan cost = biaya_lapangan per player who is non-member (members pay 0 for lapangan too? — no: lapangan cost is split among all players in session, but non-member players pay biaya_lapangan_non_member while member players pay 0 per Req §4.2), (d) sum raw tagihan per player, (e) apply roundUpToMultiple per player, (f) compute kelebihan if paid > tagihan, (g) pemain bebas_biaya: tagihan = 0 but can pay voluntarily (all goes to kelebihan). Return per-player breakdown plus total_bola_terpakai.",
+    "5. Create `src/features/billing/calculator.test.ts`: comprehensive Vitest tests using the Req §5 example: Andi Rp1.000, Budi Rp1.000, Cici Rp15.000, Dedi Rp11.000, Eko Rp0, Fani Rp12.000, total Rp40.000, stok_terpakai 4 bola. Additional edge case tests: (a) 2-player session with 1 ball, (b) session with more than 1 ball, (c) rounding cases, (d) bearer pays all ball cost, (e) bebas_biaya player has tagihan=0, (f) member player pays 0 for ball and lapangan. Run `pnpm vitest run src/features/billing/calculator.test.ts` — ALL must pass.",
+    "6. Create `src/app/api/v1/pertemuan/route.ts` (GET, POST): POST creates new pertemuan — date defaults to next play day from konfigurasi_grup.hari_main, snapshot current konfigurasi into konfigurasi_snapshot jsonb. GET returns paginated list scoped to grup_id, sorted by tanggal DESC.",
+    "7. Create `src/app/api/v1/pertemuan/[id]/route.ts` (GET, DELETE): GET returns pertemuan detail with sesi count. DELETE only if terkunci=false AND no sesi exist.",
+    "8. Create `src/app/api/v1/pertemuan/[id]/sesi/route.ts` (GET, POST): POST adds sesi — validates pemain_ids (no duplicates, all in grup, none with status_main='selesai' or 'lunas' in this pertemuan), bola_terpakai ≥ 1, lapangan in [1,2], ditanggung_oleh_pemain_id must be in pemain_ids. Upsert peserta_pertemuan rows for new players (status='bermain'). GET returns all sesi for pertemuan.",
+    "9. Create `src/app/api/v1/pertemuan/[id]/sesi/[sesiId]/route.ts` (PUT, DELETE) and `src/app/api/v1/pertemuan/[id]/sesi/[sesiId]/duplicate/route.ts` (POST): PUT updates sesi (same validations). DELETE removes sesi and its sesi_pemain rows. Duplicate creates a new sesi copying all fields from the source.",
+    "10. Create `src/app/api/v1/pertemuan/[id]/pemain/quick-add/route.ts` (POST): accepts `nama` string — if player with that name exists in grup (case-insensitive), return existing; else create new pemain with just nama. Returns pemain record. This enables typing a new name in session input to auto-create.",
+    "11. Create `src/app/api/v1/pertemuan/[id]/pemain/last-played/route.ts` (GET): returns the N most recent pemain who played in any sesi of this grup, for quick chip selection. N defaults to 12.",
+    "12. Create `src/app/api/v1/iuran/route.ts` (GET, POST): POST records iuran for a pemain for a given periode_tahun+periode_bulan. Validate nominal >= konfigurasi_grup.iuran_bulanan. Enforce UNIQUE constraint. GET returns paginated iuran with filter by pemain_id.",
+    "13. Create `src/app/api/v1/iuran/status/route.ts` (GET): given query param `pemain_id` and optional `tahun`+`bulan` (defaults to current month), return whether pemain is a member (has iuran for that period). This is the member-status endpoint used by the billing module.",
+    "14. Create `src/features/kas/auto-transactions.ts`: pure-function helpers (take DB client as param) — `createTagihanTransaction(db, params)`: when a player pays (Lunas), insert transaksi_kas with kategori 'Tagihan Pertemuan' (pemasukan, dapat_diubah=false); if paid > tagihan, also insert 'Kelebihan Bayar' (pemasukan, dapat_diubah=false). `reverseTransactions(db, referensi_tipe, referensi_id)`: soft-delete or negate all auto transactions linked to a referensi. `createIuranTransaction(db, params)`: insert iuran transaksi_kas (pemasukan, dapat_diubah=false). These will be called from payment and iuran APIs in FEAT-004."
+  ],
+  "acceptance_criteria": [
+    "`pnpm db:generate` successfully creates migrations for game and finance tables",
+    "`pnpm vitest run src/features/billing/calculator.test.ts` passes ALL tests including the Req §5 example (Andi 1000, Budi 1000, Cici 15000, Dedi 11000, Eko 0, Fani 12000, total 40000, 4 bola)",
+    "POST /api/v1/pertemuan creates pertemuan with konfigurasi snapshot",
+    "POST /api/v1/pertemuan/{id}/sesi rejects duplicate pemain in same sesi with 400 error",
+    "POST /api/v1/iuran rejects nominal below iuran_bulanan with 422 error",
+    "`pnpm build` completes with zero errors after this FEAT"
+  ],
+  "verification": [
+    "pnpm vitest run src/features/billing/calculator.test.ts",
+    "pnpm db:generate",
+    "pnpm build"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
