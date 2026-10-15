@@ -1,5 +1,6 @@
 'use client';
 
+import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -61,14 +62,11 @@ const tabs: NavTab[] = [
   { href: '/lainnya', label: 'Lainnya', icon: <MenuIcon /> },
 ];
 
-export function BottomNav() {
+function BottomNavInner() {
   const pathname = usePathname();
 
   return (
-    <nav
-      aria-label="Navigasi utama"
-      className="fixed bottom-0 left-1/2 z-30 flex w-full max-w-[430px] -translate-x-1/2 items-center justify-around border-t border-neutral-200 bg-white pb-safe"
-    >
+    <>
       {tabs.map((tab) => {
         const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
         return (
@@ -87,6 +85,37 @@ export function BottomNav() {
           </Link>
         );
       })}
+    </>
+  );
+}
+
+// Fallback renders all tabs without active highlight
+function BottomNavFallback() {
+  return (
+    <>
+      {tabs.map((tab) => (
+        <Link
+          key={tab.href}
+          href={tab.href}
+          className="flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+        >
+          {tab.icon}
+          <span>{tab.label}</span>
+        </Link>
+      ))}
+    </>
+  );
+}
+
+export function BottomNav() {
+  return (
+    <nav
+      aria-label="Navigasi utama"
+      className="fixed bottom-0 left-1/2 z-30 flex w-full max-w-[430px] -translate-x-1/2 items-center justify-around border-t border-neutral-200 bg-white pb-safe"
+    >
+      <Suspense fallback={<BottomNavFallback />}>
+        <BottomNavInner />
+      </Suspense>
     </nav>
   );
 }

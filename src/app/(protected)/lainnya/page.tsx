@@ -38,6 +38,12 @@ const menuItems: MenuItem[] = [
     description: 'Ganti password akun Anda',
     icon: '🔑',
   },
+  {
+    href: '/lainnya/stok',
+    label: 'Stok Bola',
+    description: 'Kelola stok dan pembelian bola',
+    icon: '🏸',
+  },
 ];
 
 export default function LainnyaPage() {
