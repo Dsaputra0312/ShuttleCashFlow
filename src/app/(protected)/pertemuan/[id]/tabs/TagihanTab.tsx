@@ -84,12 +84,17 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
   // Quick Iuran Sheet in Tagihan
   const [iuranSheetOpen, setIuranSheetOpen] = useState(false);
   const [iuranPeserta, setIuranPeserta] = useState<PesertaWithNama | null>(null);
-  const now = new Date();
-  const [iuranTahun, setIuranTahun] = useState(now.getFullYear());
-  const [iuranBulan, setIuranBulan] = useState(now.getMonth() + 1);
+  const [iuranTahun, setIuranTahun] = useState(2026);
+  const [iuranBulan, setIuranBulan] = useState(1);
   const [iuranNominal, setIuranNominal] = useState('50000');
   const [iuranLoading, setIuranLoading] = useState(false);
   const [iuranError, setIuranError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const d = new Date();
+    setIuranTahun(d.getFullYear());
+    setIuranBulan(d.getMonth() + 1);
+  }, []);
 
   // Buka kembali sheet
   const [bukaSheet, setBukaSheet] = useState<PesertaWithNama | null>(null);
@@ -164,8 +169,9 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
 
   const openIuranSheetForPeserta = async (peserta: PesertaWithNama) => {
     setIuranPeserta(peserta);
-    setIuranTahun(now.getFullYear());
-    setIuranBulan(now.getMonth() + 1);
+    const currentDate = new Date();
+    setIuranTahun(currentDate.getFullYear());
+    setIuranBulan(currentDate.getMonth() + 1);
     setIuranError(null);
     try {
       const confRes = await fetch('/api/v1/konfigurasi');
