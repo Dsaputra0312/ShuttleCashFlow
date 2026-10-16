@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface MenuItem {
@@ -47,6 +51,18 @@ const menuItems: MenuItem[] = [
 ];
 
 export default function LainnyaPage() {
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch('/api/v1/auth/logout', { method: 'POST' });
+    } finally {
+      router.push('/login');
+    }
+  };
+
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold text-neutral-900 mb-4">Lainnya</h1>
@@ -70,6 +86,25 @@ export default function LainnyaPage() {
           ))}
         </ul>
       </nav>
+
+      {/* Logout */}
+      <div className="mt-6">
+        <button
+          type="button"
+          id="btn-logout"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="flex items-center gap-4 w-full bg-white rounded-xl border border-danger-200 shadow-sm p-4 min-h-[44px] active:bg-danger-50 disabled:opacity-60 text-left"
+        >
+          <span className="text-2xl" aria-hidden="true">🚪</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-danger-600">
+              {loggingOut ? 'Keluar...' : 'Keluar'}
+            </p>
+            <p className="text-sm text-neutral-500 mt-0.5">Logout dari akun Anda</p>
+          </div>
+        </button>
+      </div>
     </div>
   );
 }
