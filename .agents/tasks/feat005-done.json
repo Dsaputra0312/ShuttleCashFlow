@@ -1,6 +1,0 @@
-{
-  "status": "done",
-  "tests": "pass",
-  "build": "pass",
-  "notes": "FEAT-005 complete: dashboard API (GET /api/v1/dashboard, filter harian/bulanan), Beranda page with skeleton loading, WhatsApp recap generator (pure function, 13 unit tests), rekap API (GET /api/v1/pertemuan/[id]/rekap), and Salin Rekap button on pertemuan detail (only visible when terkunci). All 31 tests pass, pnpm build zero errors."
-}
