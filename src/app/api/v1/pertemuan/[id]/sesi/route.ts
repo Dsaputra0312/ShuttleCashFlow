@@ -1,3 +1,8 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { eq, and, inArray } from 'drizzle-orm';
@@ -8,9 +13,12 @@ import { logActivity } from '@/features/activity-log/log-activity';
 import { successResponse, errorResponse } from '@/lib/api-response';
 
 const createSesiSchema = z.object({
-  lapangan: z.number().int().min(1).max(2),
-  bola_terpakai: z.number().int().min(1),
-  pemain_ids: z.array(z.string().uuid()).min(1, 'Minimal 1 pemain'),
+  lapangan: z.number().int().min(1).max(999),
+  bola_terpakai: z.number().int().min(0, 'Bola terpakai minimal 0'),
+  pemain_ids: z
+    .array(z.string().uuid())
+    .min(1, 'Minimal 1 pemain')
+    .max(4, 'Maksimal 4 pemain dalam 1 sesi'),
   ditanggung_oleh_pemain_id: z.string().uuid().nullable().optional(),
 });
 

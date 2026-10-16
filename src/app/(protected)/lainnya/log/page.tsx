@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
 
@@ -57,15 +59,10 @@ export default function LogPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPage(1);
-      fetchLogs(search, 1);
+      fetchLogs(search, page);
     }, 300);
     return () => clearTimeout(timer);
-  }, [search, fetchLogs]);
-
-  useEffect(() => {
-    fetchLogs(search, page);
-  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [search, page, fetchLogs]);
 
   const formatDate = (iso: string) => {
     return new Intl.DateTimeFormat('id-ID', {
@@ -84,14 +81,20 @@ export default function LogPage() {
       <Input
         placeholder="Cari aksi..."
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setPage(1);
+        }}
       />
 
       <div className="mt-4 flex flex-col gap-3">
-        {loading && <p className="text-neutral-500 text-sm text-center">Memuat...</p>}
+        {loading && <SkeletonList count={4} />}
 
         {!loading && logs.length === 0 && (
-          <p className="text-neutral-500 text-sm text-center">Belum ada aktivitas</p>
+          <EmptyState
+            message="Belum ada aktivitas"
+            hint="Aktivitas admin akan dicatat secara otomatis di sini"
+          />
         )}
 
         {logs.map((log) => (

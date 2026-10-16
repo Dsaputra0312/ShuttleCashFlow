@@ -1,3 +1,8 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { eq, and, count, desc } from 'drizzle-orm';
@@ -95,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     // Validate pemain exists in grup
     const pemainRows = await dbClient
-      .select({ id: pemain.id })
+      .select({ id: pemain.id, nama: pemain.nama })
       .from(pemain)
       .where(and(eq(pemain.id, pemain_id), eq(pemain.grup_id, ctx.grupId)))
       .limit(1);
@@ -143,6 +148,7 @@ export async function POST(request: NextRequest) {
     await createIuranTransaction(dbClient, {
       grupId: ctx.grupId,
       pemainId: pemain_id,
+      pemainNama: pemainRows[0].nama,
       adminId: ctx.adminId,
       iuranId: newIuran.id,
       nominal,

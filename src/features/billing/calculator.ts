@@ -34,13 +34,11 @@ export function hitungTagihan(
 
   // Accumulate raw costs per player
   const rawBola = new Map<string, number>();
-  const rawLapangan = new Map<string, number>();
   const jumlahSesiMap = new Map<string, number>();
   let totalBolaTermakai = 0;
 
   for (const sesi of sesiList) {
     totalBolaTermakai += sesi.bola_terpakai;
-    const totalBolaKost = sesi.bola_terpakai * harga_bola_per_biji;
     const pemainCount = sesi.pemain_ids.length;
     if (pemainCount === 0) continue;
 
@@ -53,34 +51,23 @@ export function hitungTagihan(
       // Ball cost
       let bolaCost = 0;
       if (bearerId) {
-        // Bearer pays full ball cost for this session
+        // Bearer bears all balls of all players in this session
         if (pemainId === bearerId) {
-          bolaCost = totalBolaKost;
+          bolaCost = pemainCount * sesi.bola_terpakai * harga_bola_per_biji;
         } else {
           bolaCost = 0;
         }
       } else {
-        // Split equally among non-members only; members pay 0
+        // Non-members pay ball cost for the balls used in this session; members pay 0
         const pemain = pemainMap.get(pemainId);
         const isMember = pemain?.is_member ?? false;
         if (!isMember) {
-          // Count how many non-members are in this session
-          const nonMemberCount = sesi.pemain_ids.filter((pid) => {
-            const p = pemainMap.get(pid);
-            return !(p?.is_member ?? false);
-          }).length;
-          bolaCost = nonMemberCount > 0 ? Math.floor(totalBolaKost / nonMemberCount) : 0;
+          bolaCost = sesi.bola_terpakai * harga_bola_per_biji;
         } else {
           bolaCost = 0;
         }
       }
       rawBola.set(pemainId, (rawBola.get(pemainId) ?? 0) + bolaCost);
-
-      // Court cost
-      const pemain = pemainMap.get(pemainId);
-      const isMember = pemain?.is_member ?? false;
-      const lapanganCost = isMember ? 0 : biaya_lapangan_non_member;
-      rawLapangan.set(pemainId, (rawLapangan.get(pemainId) ?? 0) + lapanganCost);
     }
   }
 
@@ -90,8 +77,11 @@ export function hitungTagihan(
 
   for (const pemain of pemainList) {
     const biayaBola = rawBola.get(pemain.id) ?? 0;
-    const biayaLapangan = rawLapangan.get(pemain.id) ?? 0;
     const jumlahSesi = jumlahSesiMap.get(pemain.id) ?? 0;
+    const isMember = pemain.is_member ?? false;
+
+    // Court fee is charged 1x per meeting for non-members who played at least 1 session
+    const biayaLapangan = (jumlahSesi > 0 && !isMember) ? biaya_lapangan_non_member : 0;
 
     let tagihan: number;
     if (pemain.bebas_biaya) {

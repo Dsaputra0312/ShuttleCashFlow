@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
@@ -51,7 +53,20 @@ export default function KategoriKasPage() {
     }
   }, [addToast]);
 
-  useEffect(() => { fetchList(); }, [fetchList]);
+  const [deletingKategori, setDeletingKategori] = useState<KategoriKas | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchList();
+      }
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [fetchList]);
 
   const openAdd = () => {
     setEditing(null);
@@ -113,19 +128,23 @@ export default function KategoriKasPage() {
     }
   };
 
-  const handleDelete = async (k: KategoriKas) => {
-    if (!confirm(`Hapus kategori "${k.nama}"?`)) return;
+  const handleDelete = async () => {
+    if (!deletingKategori) return;
+    setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/v1/kategori-kas/${k.id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/v1/kategori-kas/${deletingKategori.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (res.ok) {
         addToast('Kategori berhasil dihapus', 'success');
+        setDeletingKategori(null);
         fetchList();
       } else {
         addToast(json.message ?? 'Gagal menghapus kategori', 'error');
       }
     } catch {
       addToast('Terjadi kesalahan jaringan', 'error');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -136,7 +155,14 @@ export default function KategoriKasPage() {
         <Button size="sm" onClick={openAdd}>+ Tambah</Button>
       </div>
 
-      {loading && <p className="text-neutral-500 text-sm text-center">Memuat...</p>}
+      {loading && <SkeletonList count={4} />}
+
+      {!loading && list.length === 0 && (
+        <EmptyState
+          message="Belum ada kategori kas"
+          hint="Tekan tombol + Tambah untuk membuat kategori kas baru"
+        />
+      )}
 
       <div className="flex flex-col gap-3">
         {list.map((k) => (
@@ -164,7 +190,7 @@ export default function KategoriKasPage() {
                 <Button variant="secondary" size="sm" onClick={() => openEdit(k)} className="flex-1">
                   Edit
                 </Button>
-                <Button variant="danger" size="sm" onClick={() => handleDelete(k)} className="flex-1">
+                <Button variant="danger" size="sm" onClick={() => setDeletingKategori(k)} className="flex-1">
                   Hapus
                 </Button>
               </div>
@@ -207,6 +233,36 @@ export default function KategoriKasPage() {
             <Button type="submit" loading={submitting} className="flex-1">{editing ? 'Simpan' : 'Tambah'}</Button>
           </div>
         </form>
+      </BottomSheet>
+
+      {/* Confirmation BottomSheet for deleting category */}
+      <BottomSheet
+        open={!!deletingKategori}
+        onClose={() => setDeletingKategori(null)}
+        title="Hapus Kategori"
+      >
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-neutral-600">
+            Apakah Anda yakin ingin menghapus kategori &quot;{deletingKategori?.nama}&quot;?
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setDeletingKategori(null)}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              loading={deleteLoading}
+              onClick={handleDelete}
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
       </BottomSheet>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />

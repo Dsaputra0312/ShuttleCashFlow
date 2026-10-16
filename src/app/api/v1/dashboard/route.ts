@@ -1,3 +1,8 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
 import { eq, and, sum, desc, gte, lte } from 'drizzle-orm';
 import { db } from '@/db';
@@ -9,6 +14,7 @@ import {
   koreksi_stok,
   sesi,
   konfigurasi_grup,
+  pemain,
 } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
 import { successResponse, errorResponse } from '@/lib/api-response';
@@ -140,12 +146,37 @@ export async function GET(request: NextRequest) {
     const total_pengeluaran = parseInt(pengeluaranPeriode[0]?.total ?? '0', 10) || 0;
 
     // (e) 5 transaksi terbaru
-    const transaksi_terbaru = await dbClient
+    const raw_transaksi_terbaru = await dbClient
       .select()
       .from(transaksi_kas)
       .where(eq(transaksi_kas.grup_id, grupId))
       .orderBy(desc(transaksi_kas.dibuat_pada))
       .limit(5);
+
+    // Resolve any player UUIDs in keterangan
+    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const hasUuid = raw_transaksi_terbaru.some((t) => uuidRegex.test(t.keterangan || ''));
+    let transaksi_terbaru = raw_transaksi_terbaru;
+
+    if (hasUuid) {
+      const allPemain = await dbClient
+        .select({ id: pemain.id, nama: pemain.nama })
+        .from(pemain)
+        .where(eq(pemain.grup_id, grupId));
+      const pMap = new Map(allPemain.map((p) => [p.id, p.nama]));
+
+      transaksi_terbaru = raw_transaksi_terbaru.map((t) => {
+        let ket = t.keterangan || '';
+        const match = ket.match(uuidRegex);
+        if (match && pMap.has(match[0])) {
+          const pName = pMap.get(match[0])!;
+          ket = ket
+            .replace(new RegExp(`pemain\\s+${match[0]}`, 'gi'), `— ${pName}`)
+            .replace(new RegExp(match[0], 'g'), pName);
+        }
+        return { ...t, keterangan: ket };
+      });
+    }
 
     // (f) Ringkasan pertemuan terakhir
     const pertemuanTerakhir = await dbClient

@@ -39,6 +39,8 @@ export const iuran = pgTable(
     ),
     index('iuran_grup_id_idx').on(table.grup_id),
     index('iuran_pemain_id_idx').on(table.pemain_id),
+    // FEAT-006 T5.5: compound index for grup + pemain lookups
+    index('iuran_grup_pemain_idx').on(table.grup_id, table.pemain_id),
   ]
 );
 
@@ -65,6 +67,8 @@ export const transaksi_kas = pgTable(
   (table) => [
     index('transaksi_kas_grup_id_idx').on(table.grup_id),
     index('transaksi_kas_pertemuan_id_idx').on(table.pertemuan_id),
+    // FEAT-006 T5.5: compound index for grup + date filtering
+    index('transaksi_kas_grup_dibuat_pada_idx').on(table.grup_id, table.dibuat_pada),
   ]
 );
 

@@ -1,8 +1,13 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { eq, and, ilike, count, asc, desc } from 'drizzle-orm';
+import { eq, and, ilike, count, asc, desc, inArray } from 'drizzle-orm';
 import { db } from '@/db';
-import { pemain } from '@/db/schema';
+import { pemain, iuran } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
 import { logActivity } from '@/features/activity-log/log-activity';
 import { parseListQuery } from '@/lib/query-helpers';
@@ -51,7 +56,33 @@ export async function GET(request: NextRequest) {
 
     const total = totalRows[0]?.count ?? 0;
 
-    return paginatedResponse(rows, {
+    // Check membership for current month
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    const pIds = rows.map((r) => r.id);
+    const iuranRows = pIds.length
+      ? await dbClient
+          .select({ pemain_id: iuran.pemain_id })
+          .from(iuran)
+          .where(
+            and(
+              eq(iuran.grup_id, ctx.grupId),
+              eq(iuran.periode_tahun, currentYear),
+              eq(iuran.periode_bulan, currentMonth),
+              inArray(iuran.pemain_id, pIds)
+            )
+          )
+      : [];
+
+    const memberSet = new Set(iuranRows.map((i) => i.pemain_id));
+    const enrichedRows = rows.map((r) => ({
+      ...r,
+      is_member: memberSet.has(r.id),
+    }));
+
+    return paginatedResponse(enrichedRows, {
       page,
       per_page,
       total,

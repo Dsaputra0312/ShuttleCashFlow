@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
@@ -49,7 +51,20 @@ export default function AdminPage() {
     }
   }, [addToast]);
 
-  useEffect(() => { fetchAdmins(); }, [fetchAdmins]);
+  const [deactivatingAdmin, setDeactivatingAdmin] = useState<{ id: string; nama: string } | null>(null);
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchAdmins();
+      }
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [fetchAdmins]);
 
   const handleChange = (key: keyof AddAdminForm) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -98,19 +113,23 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeactivate = async (id: string, nama: string) => {
-    if (!confirm(`Nonaktifkan admin "${nama}"?`)) return;
+  const handleDeactivate = async () => {
+    if (!deactivatingAdmin) return;
+    setDeactivateLoading(true);
     try {
-      const res = await fetch(`/api/v1/admin/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/v1/admin/${deactivatingAdmin.id}`, { method: 'DELETE' });
       const json = await res.json();
       if (res.ok) {
         addToast('Admin berhasil dinonaktifkan', 'success');
+        setDeactivatingAdmin(null);
         fetchAdmins();
       } else {
         addToast(json.message ?? 'Gagal menonaktifkan admin', 'error');
       }
     } catch {
       addToast('Terjadi kesalahan jaringan', 'error');
+    } finally {
+      setDeactivateLoading(false);
     }
   };
 
@@ -121,7 +140,14 @@ export default function AdminPage() {
         <Button size="sm" onClick={handleOpenAdd}>+ Tambah</Button>
       </div>
 
-      {loading && <p className="text-neutral-500 text-sm text-center">Memuat...</p>}
+      {loading && <SkeletonList count={3} />}
+
+      {!loading && admins.length === 0 && (
+        <EmptyState
+          message="Belum ada admin"
+          hint="Tekan tombol + Tambah untuk mengundang admin baru"
+        />
+      )}
 
       <div className="flex flex-col gap-3">
         {admins.map((a) => (
@@ -141,7 +167,7 @@ export default function AdminPage() {
                 variant="danger"
                 size="sm"
                 className="mt-3 w-full"
-                onClick={() => handleDeactivate(a.id, a.nama)}
+                onClick={() => setDeactivatingAdmin({ id: a.id, nama: a.nama })}
               >
                 Nonaktifkan
               </Button>
@@ -161,6 +187,36 @@ export default function AdminPage() {
             <Button type="submit" loading={submitting} className="flex-1">Tambah</Button>
           </div>
         </form>
+      </BottomSheet>
+
+      {/* Confirmation BottomSheet for deactivating admin */}
+      <BottomSheet
+        open={!!deactivatingAdmin}
+        onClose={() => setDeactivatingAdmin(null)}
+        title="Nonaktifkan Admin"
+      >
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-neutral-600">
+            Apakah Anda yakin ingin menonaktifkan admin &quot;{deactivatingAdmin?.nama}&quot;? Admin tidak akan dapat masuk kembali ke sistem.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setDeactivatingAdmin(null)}
+            >
+              Batal
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              loading={deactivateLoading}
+              onClick={handleDeactivate}
+            >
+              Nonaktifkan
+            </Button>
+          </div>
+        </div>
       </BottomSheet>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />

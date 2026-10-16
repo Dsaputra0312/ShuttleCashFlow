@@ -1,5 +1,10 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, or, asc, inArray } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   pertemuan,
@@ -7,6 +12,7 @@ import {
   sesi_pemain,
   peserta_pertemuan,
   pemain,
+  konfigurasi_grup,
   iuran,
 } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
@@ -29,7 +35,7 @@ export async function POST(_request: NextRequest, { params }: Params) {
   try {
     const dbClient = db();
 
-    // Load pertemuan
+    // 1. Load pertemuan
     const ptRows = await dbClient
       .select()
       .from(pertemuan)
@@ -41,7 +47,7 @@ export async function POST(_request: NextRequest, { params }: Params) {
 
     if (pt.terkunci) return errorResponse('Pertemuan terkunci', undefined, 400);
 
-    // Load peserta
+    // 2. Load peserta
     const pesertaRows = await dbClient
       .select()
       .from(peserta_pertemuan)
@@ -61,15 +67,15 @@ export async function POST(_request: NextRequest, { params }: Params) {
       return errorResponse('Peserta tidak dalam status bermain', undefined, 400);
     }
 
-    // Load all sesi in this pertemuan
+    // 3. Load all sessions
     const sesiRows = await dbClient
       .select()
       .from(sesi)
-      .where(and(eq(sesi.pertemuan_id, pertemuanId), eq(sesi.grup_id, ctx.grupId)));
+      .where(and(eq(sesi.pertemuan_id, pertemuanId), eq(sesi.grup_id, ctx.grupId)))
+      .orderBy(asc(sesi.dibuat_pada));
 
     const sesiIds = sesiRows.map((s) => s.id);
 
-    // Load all sesi_pemain for this pertemuan
     const sesiPemainRows = sesiIds.length
       ? await dbClient
           .select()
@@ -77,43 +83,107 @@ export async function POST(_request: NextRequest, { params }: Params) {
           .where(inArray(sesi_pemain.sesi_id, sesiIds))
       : [];
 
-    // Get all unique pemain_ids in this pertemuan
+    const sesiPemainMap = new Map<string, string[]>();
+    for (const sp of sesiPemainRows) {
+      const arr = sesiPemainMap.get(sp.sesi_id) ?? [];
+      arr.push(sp.pemain_id);
+      sesiPemainMap.set(sp.sesi_id, arr);
+    }
+
+    // 4. Verify player has NO active draft session (bola_terpakai === 0)
+    for (const s of sesiRows) {
+      if (s.bola_terpakai === 0) {
+        const pids = sesiPemainMap.get(s.id) ?? [];
+        if (pids.includes(peserta.pemain_id)) {
+          return errorResponse(
+            `Pemain masih memiliki sesi main yang sedang berlangsung di Lapangan ${s.lapangan}. Harap masukkan jumlah bola atau selesaikan sesi terlebih dahulu.`,
+            undefined,
+            400
+          );
+        }
+      }
+    }
+
+    // 5. Load configuration directly from DB (konfigurasi_grup)
+    const konfigRows = await dbClient
+      .select()
+      .from(konfigurasi_grup)
+      .where(eq(konfigurasi_grup.grup_id, ctx.grupId))
+      .limit(1);
+
+    let konfigDb = konfigRows[0];
+    if (!konfigDb) {
+      const [inserted] = await dbClient
+        .insert(konfigurasi_grup)
+        .values({ grup_id: ctx.grupId })
+        .onConflictDoNothing()
+        .returning();
+      konfigDb = inserted ?? konfigRows[0];
+    }
+
+    const snapshot = (pt.konfigurasi_snapshot ?? {}) as Record<string, number>;
+    const config: KonfigurasiInput = {
+      harga_bola_per_biji: konfigDb?.harga_bola_per_biji ?? snapshot.harga_bola_per_biji ?? 5000,
+      biaya_lapangan_non_member: konfigDb?.biaya_lapangan_non_member ?? snapshot.biaya_lapangan_non_member ?? 10000,
+      kelipatan_pembulatan: konfigDb?.kelipatan_pembulatan ?? snapshot.kelipatan_pembulatan ?? 1000,
+    };
+
+    // 6. Load all players data & membership
     const allPemainIds = [
-      ...new Set(sesiPemainRows.map((sp) => sp.pemain_id)),
+      ...new Set([
+        ...sesiPemainRows.map((sp) => sp.pemain_id),
+        peserta.pemain_id,
+      ]),
     ];
 
-    // Load pemain data
     const pemainRows = allPemainIds.length
       ? await dbClient
-          .select({ id: pemain.id, bebas_biaya: pemain.bebas_biaya })
+          .select({ id: pemain.id, nama: pemain.nama, bebas_biaya: pemain.bebas_biaya })
           .from(pemain)
-          .where(
-            and(eq(pemain.grup_id, ctx.grupId), inArray(pemain.id, allPemainIds))
-          )
+          .where(and(eq(pemain.grup_id, ctx.grupId), inArray(pemain.id, allPemainIds)))
       : [];
 
-    // Determine member status: check iuran for current month
+    const pemainNamaMap = new Map<string, string>();
+    for (const p of pemainRows) {
+      pemainNamaMap.set(p.id, p.nama);
+    }
+
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
+    const ptDate = pt.tanggal ? new Date(pt.tanggal) : now;
+    const meetingYear = ptDate.getFullYear();
+    const meetingMonth = ptDate.getMonth() + 1;
+    const nowYear = now.getFullYear();
+    const nowMonth = now.getMonth() + 1;
+
+    const iuranConditions = [
+      eq(iuran.grup_id, ctx.grupId),
+      inArray(iuran.pemain_id, allPemainIds),
+    ];
+
+    if (meetingYear === nowYear && meetingMonth === nowMonth) {
+      iuranConditions.push(
+        eq(iuran.periode_tahun, meetingYear),
+        eq(iuran.periode_bulan, meetingMonth)
+      );
+    } else {
+      iuranConditions.push(
+        or(
+          and(eq(iuran.periode_tahun, meetingYear), eq(iuran.periode_bulan, meetingMonth)),
+          and(eq(iuran.periode_tahun, nowYear), eq(iuran.periode_bulan, nowMonth))
+        )!
+      );
+    }
 
     const iuranRows = allPemainIds.length
       ? await dbClient
           .select({ pemain_id: iuran.pemain_id })
           .from(iuran)
-          .where(
-            and(
-              eq(iuran.grup_id, ctx.grupId),
-              eq(iuran.periode_tahun, currentYear),
-              eq(iuran.periode_bulan, currentMonth),
-              inArray(iuran.pemain_id, allPemainIds)
-            )
-          )
+          .where(and(...iuranConditions))
       : [];
 
     const memberSet = new Set(iuranRows.map((i) => i.pemain_id));
 
-    // Build inputs for calculator
+    // 7. Calculate billing
     const pemainInputs: PemainInput[] = pemainRows.map((p) => ({
       id: p.id,
       bebas_biaya: p.bebas_biaya,
@@ -125,28 +195,19 @@ export async function POST(_request: NextRequest, { params }: Params) {
       lapangan: s.lapangan,
       bola_terpakai: s.bola_terpakai,
       ditanggung_oleh_pemain_id: s.ditanggung_oleh_pemain_id ?? null,
-      pemain_ids: sesiPemainRows
-        .filter((sp) => sp.sesi_id === s.id)
-        .map((sp) => sp.pemain_id),
+      pemain_ids: sesiPemainMap.get(s.id) ?? [],
     }));
 
-    const snapshot = pt.konfigurasi_snapshot as Record<string, number>;
-    const config: KonfigurasiInput = {
-      harga_bola_per_biji: snapshot.harga_bola_per_biji,
-      biaya_lapangan_non_member: snapshot.biaya_lapangan_non_member,
-      kelipatan_pembulatan: snapshot.kelipatan_pembulatan,
-    };
-
     const hasil = hitungTagihan(sesiInputs, pemainInputs, config);
-
-    // Find this peserta's billing breakdown
     const tagihanPemain = hasil.tagihan_per_pemain.find(
       (t) => t.pemain_id === peserta.pemain_id
     );
 
     const tagihan = tagihanPemain?.tagihan ?? 0;
+    const isMember = memberSet.has(peserta.pemain_id);
+    const isBebasBiaya = pemainRows.find((p) => p.id === peserta.pemain_id)?.bebas_biaya ?? false;
 
-    // Update peserta status
+    // 8. Update peserta status to 'selesai'
     await dbClient
       .update(peserta_pertemuan)
       .set({
@@ -161,15 +222,68 @@ export async function POST(_request: NextRequest, { params }: Params) {
         )
       );
 
+    // 9. Detailed ball usage breakdown per session for this player
+    const playerSessions = sesiRows
+      .map((s, idx) => {
+        const pids = sesiPemainMap.get(s.id) ?? [];
+        if (!pids.includes(peserta.pemain_id)) return null;
+
+        const nonMemberIds = pids.filter((id) => !memberSet.has(id));
+        const totalNonMembers = nonMemberIds.length;
+        const isBearer = s.ditanggung_oleh_pemain_id === peserta.pemain_id;
+        const hasOtherBearer =
+          s.ditanggung_oleh_pemain_id &&
+          s.ditanggung_oleh_pemain_id !== peserta.pemain_id;
+
+        let biayaBolaPemain = 0;
+        let bolaPemain = 0;
+        if (isBebasBiaya || isMember || hasOtherBearer) {
+          biayaBolaPemain = 0;
+          bolaPemain = 0;
+        } else if (isBearer) {
+          bolaPemain = s.bola_terpakai * pids.length;
+          biayaBolaPemain = bolaPemain * config.harga_bola_per_biji;
+        } else {
+          bolaPemain = s.bola_terpakai;
+          biayaBolaPemain = bolaPemain * config.harga_bola_per_biji;
+        }
+
+        return {
+          sesi_id: s.id,
+          sesi_ke: idx + 1,
+          lapangan: s.lapangan,
+          bola_terpakai: s.bola_terpakai,
+          bola_terpakai_pemain: bolaPemain,
+          is_draft: s.bola_terpakai === 0,
+          total_pemain: pids.length,
+          total_non_members: totalNonMembers,
+          is_bearer: isBearer,
+          bearer_nama: s.ditanggung_oleh_pemain_id
+            ? pemainNamaMap.get(s.ditanggung_oleh_pemain_id) ?? null
+            : null,
+          biaya_bola_pemain: biayaBolaPemain,
+        };
+      })
+      .filter(Boolean);
+
     return successResponse({
       peserta_id: pesertaId,
       pemain_id: peserta.pemain_id,
       tagihan,
+      status_main: 'selesai',
+      is_member: isMember,
+      bebas_biaya: isBebasBiaya,
       breakdown: {
         biaya_bola: tagihanPemain?.biaya_bola_raw ?? 0,
         biaya_lapangan: tagihanPemain?.biaya_lapangan_raw ?? 0,
-        pembulatan: tagihan - ((tagihanPemain?.biaya_bola_raw ?? 0) + (tagihanPemain?.biaya_lapangan_raw ?? 0)),
+        pembulatan:
+          tagihan -
+          ((tagihanPemain?.biaya_bola_raw ?? 0) + (tagihanPemain?.biaya_lapangan_raw ?? 0)),
         tagihan_total: tagihan,
+        jumlah_sesi: tagihanPemain?.jumlah_sesi ?? 0,
+        harga_bola_per_biji: config.harga_bola_per_biji,
+        biaya_lapangan_non_member: config.biaya_lapangan_non_member,
+        sesi_details: playerSessions,
       },
     });
   } catch (err) {

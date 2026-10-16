@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
@@ -116,12 +118,28 @@ function PemainDetailPageInner() {
   );
 
   useEffect(() => {
-    fetchPemain();
-    fetchMemberStatus();
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchPemain();
+        fetchMemberStatus();
+      }
+    });
+    return () => {
+      ignore = true;
+    };
   }, [fetchPemain, fetchMemberStatus]);
 
   useEffect(() => {
-    fetchIuran(iuranPage);
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchIuran(iuranPage);
+      }
+    });
+    return () => {
+      ignore = true;
+    };
   }, [iuranPage, fetchIuran]);
 
   const handleCatatIuran = async () => {
@@ -162,7 +180,9 @@ function PemainDetailPageInner() {
 
   if (loading) {
     return (
-      <div className="p-4 text-center text-sm text-neutral-500">Memuat...</div>
+      <div className="p-4">
+        <SkeletonList count={3} />
+      </div>
     );
   }
 
@@ -225,11 +245,21 @@ function PemainDetailPageInner() {
         <h2 className="font-semibold text-neutral-900">Riwayat Iuran</h2>
         <Button
           size="sm"
-          onClick={() => {
+          onClick={async () => {
             setIuranTahun(now.getFullYear());
             setIuranBulan(now.getMonth() + 1);
-            setIuranNominal('');
             setIuranError(null);
+            try {
+              const confRes = await fetch('/api/v1/konfigurasi');
+              const confJson = await confRes.json();
+              if (confRes.ok && confJson.data?.iuran_bulanan) {
+                setIuranNominal(String(confJson.data.iuran_bulanan));
+              } else {
+                setIuranNominal('50000');
+              }
+            } catch {
+              setIuranNominal('50000');
+            }
             setIuranOpen(true);
           }}
         >
@@ -238,7 +268,10 @@ function PemainDetailPageInner() {
       </div>
 
       {iuranList.length === 0 && (
-        <p className="text-sm text-neutral-500 py-4 text-center">Belum ada iuran</p>
+        <EmptyState
+          message="Belum ada iuran"
+          hint="Tekan tombol + Catat Iuran untuk mencatat iuran pemain"
+        />
       )}
 
       <div className="flex flex-col gap-2">

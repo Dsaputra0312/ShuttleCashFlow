@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { z } from 'zod';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Toggle } from '@/components/ui/Toggle';
 
 const pemainSchema = z.object({
   nama: z.string().min(1, 'Nama wajib diisi'),
@@ -43,7 +44,11 @@ export function PemainForm({ open, onClose, initial, onSuccess }: PemainFormProp
 
   const isEdit = !!initial?.id;
 
-  useEffect(() => {
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (open !== prevOpen || initial !== prevInitial) {
+    setPrevOpen(open);
+    setPrevInitial(initial);
     if (open) {
       setForm({
         nama: initial?.nama ?? '',
@@ -54,7 +59,7 @@ export function PemainForm({ open, onClose, initial, onSuccess }: PemainFormProp
       setErrors({});
       setServerError(null);
     }
-  }, [open, initial]);
+  }
 
   const handleChange = (key: keyof PemainFormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -142,27 +147,17 @@ export function PemainForm({ open, onClose, initial, onSuccess }: PemainFormProp
         </div>
 
         {/* Bebas biaya toggle */}
-        <button
-          type="button"
+        <div
           onClick={handleToggle}
-          className="flex items-center justify-between w-full h-11 px-3 rounded-lg border border-neutral-200 bg-neutral-50"
-          aria-pressed={form.bebas_biaya}
+          className="flex items-center justify-between w-full h-11 px-3 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100/60 transition-colors cursor-pointer select-none"
         >
           <span className="text-sm text-neutral-700">Bebas Biaya</span>
-          <span
-            className={[
-              'relative inline-block w-10 h-6 rounded-full transition-colors',
-              form.bebas_biaya ? 'bg-primary-600' : 'bg-neutral-300',
-            ].join(' ')}
-          >
-            <span
-              className={[
-                'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
-                form.bebas_biaya ? 'translate-x-4' : 'translate-x-0.5',
-              ].join(' ')}
-            />
-          </span>
-        </button>
+          <Toggle
+            checked={!!form.bebas_biaya}
+            onChange={(checked) => setForm((prev) => ({ ...prev, bebas_biaya: checked }))}
+            aria-label="Bebas Biaya"
+          />
+        </div>
 
         {serverError && (
           <p className="text-sm text-danger-600" role="alert">

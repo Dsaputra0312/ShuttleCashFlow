@@ -7,6 +7,7 @@ import {
   uuid,
   jsonb,
   pgEnum,
+  index,
 } from 'drizzle-orm/pg-core';
 import { grup, admin } from './auth';
 
@@ -50,4 +51,8 @@ export const log_aktivitas = pgTable('log_aktivitas', {
   detail: jsonb('detail'),
   alasan: text('alasan'),
   dibuat_pada: timestamp('dibuat_pada', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  index('log_aktivitas_grup_id_idx').on(table.grup_id),
+  // FEAT-006 T5.5: compound index for grup + date filtering on activity logs
+  index('log_aktivitas_grup_dibuat_pada_idx').on(table.grup_id, table.dibuat_pada),
+]);

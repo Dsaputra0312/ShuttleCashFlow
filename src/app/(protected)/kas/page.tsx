@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
@@ -94,17 +96,28 @@ export default function KasPage() {
   );
 
   useEffect(() => {
-    fetchKategori();
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchKategori();
+      }
+    });
+    return () => {
+      ignore = true;
+    };
   }, [fetchKategori]);
 
   useEffect(() => {
-    setPage(1);
-    fetchList(1);
-  }, [filterTipe, filterKategori, filterBulan, fetchList]);
-
-  useEffect(() => {
-    fetchList(page);
-  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchList(page);
+      }
+    });
+    return () => {
+      ignore = true;
+    };
+  }, [page, filterTipe, filterKategori, filterBulan, fetchList]);
 
   const openAdd = (tipe: 'pemasukan' | 'pengeluaran') => {
     setAddTipe(tipe);
@@ -166,7 +179,10 @@ export default function KasPage() {
             <button
               key={t}
               type="button"
-              onClick={() => setFilterTipe(t)}
+              onClick={() => {
+                setFilterTipe(t);
+                setPage(1);
+              }}
               className={[
                 'flex-1 h-9 rounded-lg border text-sm font-medium transition-colors',
                 filterTipe === t
@@ -182,12 +198,18 @@ export default function KasPage() {
           <input
             type="month"
             value={filterBulan}
-            onChange={(e) => setFilterBulan(e.target.value)}
+            onChange={(e) => {
+              setFilterBulan(e.target.value);
+              setPage(1);
+            }}
             className="flex-1 h-9 rounded-lg border border-neutral-300 px-2 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
           <select
             value={filterKategori}
-            onChange={(e) => setFilterKategori(e.target.value)}
+            onChange={(e) => {
+              setFilterKategori(e.target.value);
+              setPage(1);
+            }}
             className="flex-1 h-9 rounded-lg border border-neutral-300 px-2 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">Semua Kategori</option>
@@ -201,14 +223,13 @@ export default function KasPage() {
       </div>
 
       {/* List */}
-      {loading && (
-        <p className="text-neutral-500 text-sm text-center py-4">Memuat...</p>
-      )}
+      {loading && <SkeletonList count={4} />}
 
       {!loading && list.length === 0 && (
-        <p className="text-neutral-500 text-sm text-center py-8">
-          Belum ada transaksi
-        </p>
+        <EmptyState
+          message="Belum ada transaksi"
+          hint="Transaksi kas akan muncul di sini"
+        />
       )}
 
       <div className="flex flex-col gap-2">

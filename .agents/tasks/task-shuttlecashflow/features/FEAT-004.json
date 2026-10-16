@@ -2,7 +2,7 @@
   "id": "FEAT-004",
   "type": "feat",
   "description": "Tahap 2 (T2.7–T2.16) + Tahap 3 (T3.4–T3.13) — Complete game flow APIs (Selesai Main, payment, Buka Kembali, lock/unlock), all game UI screens, financial APIs (manual kas transactions, stok bola, pembelian, koreksi stok), and all financial UI screens. Requires FEAT-003 (billing engine, auto-transaction service, iuran). This is the largest feature — all the interconnected game+finance logic.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "1. Create `src/app/api/v1/pertemuan/[id]/peserta/[pesertaId]/selesai-main/route.ts` (POST): load all sesi for this pertemuan containing this pemain, call `hitungTagihan()` from calculator.ts, set peserta_pertemuan.status_main='selesai', store tagihan integer. Return breakdown: bola cost, lapangan cost, pembulatan, tagihan total. (T2.7)",
     "2. Create `src/app/api/v1/pertemuan/[id]/peserta/[pesertaId]/bayar/route.ts` (POST): validate body `{ jumlah: int, metode: string }`. Rules: (a) tagihan > 0: jumlah must be >= tagihan, excess recorded; (b) tagihan = 0 (bebas_biaya): all jumlah recorded as kelebihan; (c) call auto-transaction service to create kas records (dapat_diubah=false). Set status_main='lunas', dibayar=jumlah, metode_bayar. Return updated peserta. (T2.8)",

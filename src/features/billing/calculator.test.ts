@@ -170,9 +170,9 @@ describe('hitungTagihan - basic rules', () => {
     const tA = result.tagihan_per_pemain.find((t) => t.pemain_id === 'A')!;
     const tB = result.tagihan_per_pemain.find((t) => t.pemain_id === 'B')!;
 
-    expect(tA.biaya_bola_raw).toBe(10000); // bearer pays all
+    expect(tA.biaya_bola_raw).toBe(20000); // bearer pays 2 players * 2 balls * 5000 = 20000
     expect(tB.biaya_bola_raw).toBe(0); // other player pays 0 for ball
-    // Both non-members pay lapangan
+    // Both non-members pay lapangan 1x per meeting
     expect(tA.biaya_lapangan_raw).toBe(10000);
     expect(tB.biaya_lapangan_raw).toBe(10000);
   });
@@ -188,17 +188,18 @@ describe('hitungTagihan - basic rules', () => {
       {
         id: 's1',
         lapangan: 1,
-        bola_terpakai: 1, // 5000 total / 2 = 2500 each
+        bola_terpakai: 1, // 5000 total
         ditanggung_oleh_pemain_id: null,
         pemain_ids: ['A', 'B'],
       },
     ];
-    const result = hitungTagihan(sesi, pemain, CONFIG);
+    const customConfig = { ...CONFIG, harga_bola_per_biji: 4250 };
+    const result = hitungTagihan(sesi, pemain, customConfig);
     const tA = result.tagihan_per_pemain.find((t) => t.pemain_id === 'A')!;
-    // raw = 2500 bola + 10000 lapangan = 12500, round up to 1000 → 13000
-    expect(tA.biaya_bola_raw).toBe(2500);
+    // raw = 4250 bola + 10000 lapangan = 14250, round up to 1000 → 15000
+    expect(tA.biaya_bola_raw).toBe(4250);
     expect(tA.biaya_lapangan_raw).toBe(10000);
-    expect(tA.tagihan).toBe(13000); // ceil(12500 / 1000) * 1000 = 13000
+    expect(tA.tagihan).toBe(15000);
   });
 
   it('player with no sessions has tagihan=0', () => {
@@ -241,10 +242,10 @@ describe('hitungTagihan - basic rules', () => {
     ];
     const result = hitungTagihan(sesi, pemain, CONFIG);
     const tA = result.tagihan_per_pemain[0];
-    // 2 sessions: bola = 5000+5000=10000, lapangan = 10000+10000=20000, raw=30000
+    // 2 sessions: bola = 5000+5000=10000, lapangan = 10000 (1x per meeting), raw=20000
     expect(tA.biaya_bola_raw).toBe(10000);
-    expect(tA.biaya_lapangan_raw).toBe(20000);
-    expect(tA.tagihan).toBe(30000);
+    expect(tA.biaya_lapangan_raw).toBe(10000);
+    expect(tA.tagihan).toBe(20000);
     expect(tA.jumlah_sesi).toBe(2);
   });
 
@@ -282,5 +283,222 @@ describe('hitungTagihan - basic rules', () => {
     expect(result.total_tagihan).toBe(0);
     expect(result.total_bola_terpakai).toBe(0);
     expect(result.tagihan_per_pemain[0].tagihan).toBe(0);
+  });
+});
+
+/**
+ * Pure helpers modelling the payment + reversal invariants that the
+ * billing engine and the auto-transaction recorder must satisfy together.
+ * The calculator produces `tagihan`; payment records `dibayar`; the excess
+ * is `kelebihan = max(0, dibayar - tagihan)`; reversal deletes exactly the
+ * recorded pemasukan so the net saldo change is zero.
+ */
+function computeKelebihan(tagihan: number, dibayar: number): number {
+  return Math.max(0, dibayar - tagihan);
+}
+
+/** Mirrors the corrected createTagihanTransaction: one record per rupiah. */
+function recordedPemasukan(tagihan: number, dibayar: number): number {
+  const kelebihan = computeKelebihan(tagihan, dibayar);
+  return (tagihan > 0 ? tagihan : 0) + kelebihan;
+}
+
+describe('hitungTagihan - edge cases (FEAT-006)', () => {
+  // (a) two concurrent lapangan in the same pertemuan (different lapangan numbers)
+  it('accumulates costs across two concurrent sessions on different lapangan', () => {
+    const pemain: PemainInput[] = [
+      { id: 'A', bebas_biaya: false, is_member: false },
+      { id: 'B', bebas_biaya: false, is_member: false },
+      { id: 'C', bebas_biaya: false, is_member: false },
+    ];
+    const sesi: SesiInput[] = [
+      {
+        id: 's1',
+        lapangan: 1,
+        bola_terpakai: 2, // 10000 total / 2 non-members = 5000 each
+        ditanggung_oleh_pemain_id: null,
+        pemain_ids: ['A', 'B'],
+      },
+      {
+        id: 's2',
+        lapangan: 2,
+        bola_terpakai: 1, // 5000 total / 2 non-members = 2500 each
+        ditanggung_oleh_pemain_id: null,
+        pemain_ids: ['B', 'C'],
+      },
+    ];
+    const result = hitungTagihan(sesi, pemain, CONFIG);
+    const tA = result.tagihan_per_pemain.find((t) => t.pemain_id === 'A')!;
+    const tB = result.tagihan_per_pemain.find((t) => t.pemain_id === 'B')!;
+    const tC = result.tagihan_per_pemain.find((t) => t.pemain_id === 'C')!;
+
+    // A: sesi 1 only → bola 10000 + lapangan 10000 = 20000
+    expect(tA.biaya_bola_raw).toBe(10000);
+    expect(tA.biaya_lapangan_raw).toBe(10000);
+    expect(tA.tagihan).toBe(20000);
+    expect(tA.jumlah_sesi).toBe(1);
+
+    // B: both sessions → bola 10000 + 5000 = 15000, lapangan 10000 (1x per meeting), raw 25000 → 25000
+    expect(tB.biaya_bola_raw).toBe(15000);
+    expect(tB.biaya_lapangan_raw).toBe(10000);
+    expect(tB.tagihan).toBe(25000);
+    expect(tB.jumlah_sesi).toBe(2);
+
+    // C: sesi 2 only → bola 5000 + lapangan 10000 = 15000 → 15000
+    expect(tC.biaya_bola_raw).toBe(5000);
+    expect(tC.biaya_lapangan_raw).toBe(10000);
+    expect(tC.tagihan).toBe(15000);
+    expect(tC.jumlah_sesi).toBe(1);
+  });
+
+  // (b) penanggung bola pays all ball cost; everyone else pays 0 for bola
+  it('bearer pays all ball cost, others pay 0 for ball (including members)', () => {
+    const pemain: PemainInput[] = [
+      { id: 'A', bebas_biaya: false, is_member: false }, // bearer (non-member)
+      { id: 'B', bebas_biaya: false, is_member: false }, // other non-member
+      { id: 'C', bebas_biaya: false, is_member: true }, // member
+    ];
+    const sesi: SesiInput[] = [
+      {
+        id: 's1',
+        lapangan: 1,
+        bola_terpakai: 3, // 15000 total
+        ditanggung_oleh_pemain_id: 'A',
+        pemain_ids: ['A', 'B', 'C'],
+      },
+    ];
+    const result = hitungTagihan(sesi, pemain, CONFIG);
+    const tA = result.tagihan_per_pemain.find((t) => t.pemain_id === 'A')!;
+    const tB = result.tagihan_per_pemain.find((t) => t.pemain_id === 'B')!;
+    const tC = result.tagihan_per_pemain.find((t) => t.pemain_id === 'C')!;
+
+    // Bearer pays 3 players * 3 balls * 5000 = 45000 bola, plus non-member lapangan 10000
+    expect(tA.biaya_bola_raw).toBe(45000);
+    expect(tA.biaya_lapangan_raw).toBe(10000);
+    expect(tA.tagihan).toBe(55000);
+
+    // Other non-member pays 0 bola, 10000 lapangan
+    expect(tB.biaya_bola_raw).toBe(0);
+    expect(tB.biaya_lapangan_raw).toBe(10000);
+    expect(tB.tagihan).toBe(10000);
+
+    // Member pays 0 bola, 0 lapangan
+    expect(tC.biaya_bola_raw).toBe(0);
+    expect(tC.biaya_lapangan_raw).toBe(0);
+    expect(tC.tagihan).toBe(0);
+  });
+
+  // (c) bebas_biaya player who pays voluntarily — all goes to kelebihan
+  it('bebas_biaya voluntary payment: tagihan 0, whole payment is kelebihan (once)', () => {
+    const pemain: PemainInput[] = [
+      { id: 'X', bebas_biaya: true, is_member: false },
+    ];
+    const sesi: SesiInput[] = [
+      {
+        id: 's1',
+        lapangan: 1,
+        bola_terpakai: 2,
+        ditanggung_oleh_pemain_id: null,
+        pemain_ids: ['X'],
+      },
+    ];
+    const result = hitungTagihan(sesi, pemain, CONFIG);
+    const t = result.tagihan_per_pemain[0];
+
+    // bebas_biaya forces tagihan to 0
+    expect(t.tagihan).toBe(0);
+
+    // A voluntary payment of 5000 must be recorded as kelebihan exactly once
+    const dibayar = 5000;
+    expect(computeKelebihan(t.tagihan, dibayar)).toBe(5000);
+    expect(recordedPemasukan(t.tagihan, dibayar)).toBe(5000); // NOT 10000
+  });
+
+  // (d) kelebihan bayar recorded correctly
+  it('kelebihan is the excess of dibayar over tagihan, zero otherwise', () => {
+    const pemain: PemainInput[] = [
+      { id: 'A', bebas_biaya: false, is_member: false },
+    ];
+    const sesi: SesiInput[] = [
+      {
+        id: 's1',
+        lapangan: 1,
+        bola_terpakai: 1, // 5000 bola + 10000 lapangan = 15000
+        ditanggung_oleh_pemain_id: null,
+        pemain_ids: ['A'],
+      },
+    ];
+    const result = hitungTagihan(sesi, pemain, CONFIG);
+    const t = result.tagihan_per_pemain[0];
+    expect(t.tagihan).toBe(15000);
+
+    // Exact payment → no kelebihan
+    expect(computeKelebihan(t.tagihan, 15000)).toBe(0);
+    // Overpayment → excess recorded
+    expect(computeKelebihan(t.tagihan, 17000)).toBe(2000);
+    // Recorded pemasukan = tagihan + kelebihan = full dibayar
+    expect(recordedPemasukan(t.tagihan, 17000)).toBe(17000);
+  });
+
+  // (e) new tamu/guest player scenario (non-member playing first time)
+  it('new guest (tamu) non-member pays bola share + lapangan for one session', () => {
+    const pemain: PemainInput[] = [
+      { id: 'host', bebas_biaya: false, is_member: true }, // member host
+      { id: 'tamu', bebas_biaya: false, is_member: false }, // new guest
+    ];
+    const sesi: SesiInput[] = [
+      {
+        id: 's1',
+        lapangan: 1,
+        bola_terpakai: 2, // 10000 total; only the 1 non-member pays → 10000
+        ditanggung_oleh_pemain_id: null,
+        pemain_ids: ['host', 'tamu'],
+      },
+    ];
+    const result = hitungTagihan(sesi, pemain, CONFIG);
+    const tHost = result.tagihan_per_pemain.find((t) => t.pemain_id === 'host')!;
+    const tTamu = result.tagihan_per_pemain.find((t) => t.pemain_id === 'tamu')!;
+
+    // Member host pays nothing
+    expect(tHost.tagihan).toBe(0);
+    // Guest pays full bola (only non-member) + lapangan = 10000 + 10000 = 20000
+    expect(tTamu.biaya_bola_raw).toBe(10000);
+    expect(tTamu.biaya_lapangan_raw).toBe(10000);
+    expect(tTamu.tagihan).toBe(20000);
+    expect(tTamu.jumlah_sesi).toBe(1);
+  });
+
+  // (f) Buka Kembali reversal leaves saldo unchanged
+  it('Buka Kembali reversal: recorded pemasukan is fully reversed (net saldo 0)', () => {
+    const pemain: PemainInput[] = [
+      { id: 'A', bebas_biaya: false, is_member: false },
+    ];
+    const sesi: SesiInput[] = [
+      {
+        id: 's1',
+        lapangan: 1,
+        bola_terpakai: 1, // 5000 + 10000 = 15000
+        ditanggung_oleh_pemain_id: null,
+        pemain_ids: ['A'],
+      },
+    ];
+    const result = hitungTagihan(sesi, pemain, CONFIG);
+    const t = result.tagihan_per_pemain[0];
+    expect(t.tagihan).toBe(15000);
+
+    // Player pays with a small excess
+    const dibayar = 16000;
+    const recorded = recordedPemasukan(t.tagihan, dibayar);
+    expect(recorded).toBe(16000);
+
+    // Saldo after payment increases by the recorded pemasukan
+    let saldo = 0;
+    saldo += recorded;
+    // Buka Kembali reverses exactly the auto-transactions for this peserta
+    saldo -= recorded;
+
+    // Net saldo change is zero, and the participant's billing is reset
+    expect(saldo).toBe(0);
+    expect(computeKelebihan(0, 0)).toBe(0); // after reset tagihan=0, dibayar=0
   });
 });

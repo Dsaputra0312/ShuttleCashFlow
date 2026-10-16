@@ -24,6 +24,7 @@ export interface TagihanTransactionParams {
   pertemuanId: string;
   pesertaId: string;
   pemainId: string;
+  pemainNama?: string;
   adminId: string;
   tagihan: number;
   dibayar: number;
@@ -39,16 +40,17 @@ export async function createTagihanTransaction(
   db: Database,
   params: TagihanTransactionParams
 ): Promise<void> {
-  const { grupId, pertemuanId, pesertaId, pemainId, adminId, tagihan, dibayar } = params;
+  const { grupId, pertemuanId, pesertaId, pemainId, pemainNama, adminId, tagihan, dibayar } = params;
 
   if (tagihan > 0) {
     const kategori = await findKategori(db, grupId, 'Tagihan Pertemuan');
+    const namaLabel = pemainNama ? ` — ${pemainNama}` : ` pemain ${pemainId}`;
     await db.insert(transaksi_kas).values({
       grup_id: grupId,
       kategori_id: kategori?.id ?? null,
       nominal: tagihan,
       tipe: 'pemasukan',
-      keterangan: `Tagihan pertemuan pemain ${pemainId}`,
+      keterangan: `Tagihan pertemuan${namaLabel}`,
       referensi_tipe: 'peserta_pertemuan',
       referensi_id: pesertaId,
       pertemuan_id: pertemuanId,
@@ -65,7 +67,10 @@ export async function createTagihanTransaction(
       kategori_id: kategori?.id ?? null,
       nominal: kelebihan,
       tipe: 'pemasukan',
-      keterangan: `Kelebihan bayar pertemuan pemain ${pemainId}`,
+      keterangan:
+        tagihan === 0
+          ? `Sukarela/kelebihan bayar pemain ${pemainId}`
+          : `Kelebihan bayar pertemuan pemain ${pemainId}`,
       referensi_tipe: 'peserta_pertemuan',
       referensi_id: pesertaId,
       pertemuan_id: pertemuanId,
@@ -74,22 +79,9 @@ export async function createTagihanTransaction(
     });
   }
 
-  // bebas_biaya case: tagihan=0 but dibayar>0, all goes to kelebihan
-  if (tagihan === 0 && dibayar > 0) {
-    const kategori = await findKategori(db, grupId, 'Kelebihan Bayar');
-    await db.insert(transaksi_kas).values({
-      grup_id: grupId,
-      kategori_id: kategori?.id ?? null,
-      nominal: dibayar,
-      tipe: 'pemasukan',
-      keterangan: `Sukarela/kelebihan bayar pemain ${pemainId}`,
-      referensi_tipe: 'peserta_pertemuan',
-      referensi_id: pesertaId,
-      pertemuan_id: pertemuanId,
-      dapat_diubah: false,
-      dibuat_oleh_admin_id: adminId,
-    });
-  }
+  // NOTE: a previous branch duplicated the kelebihan record when tagihan === 0
+  // (bebas_biaya voluntary payment), double-counting the pemasukan. The
+  // kelebihan branch above now records it exactly once for that case too.
 }
 
 /**
@@ -115,6 +107,7 @@ export async function reverseTransactions(
 export interface IuranTransactionParams {
   grupId: string;
   pemainId: string;
+  pemainNama?: string;
   adminId: string;
   iuranId: string;
   nominal: number;
@@ -128,14 +121,15 @@ export async function createIuranTransaction(
   db: Database,
   params: IuranTransactionParams
 ): Promise<void> {
-  const { grupId, pemainId, adminId, iuranId, nominal } = params;
+  const { grupId, pemainId, pemainNama, adminId, iuranId, nominal } = params;
   const kategori = await findKategori(db, grupId, 'Iuran Bulanan');
+  const ket = pemainNama ? `Iuran bulanan — ${pemainNama}` : `Iuran bulanan pemain ${pemainId}`;
   await db.insert(transaksi_kas).values({
     grup_id: grupId,
     kategori_id: kategori?.id ?? null,
     nominal,
     tipe: 'pemasukan',
-    keterangan: `Iuran bulanan pemain ${pemainId}`,
+    keterangan: ket,
     referensi_tipe: 'iuran',
     referensi_id: iuranId,
     dapat_diubah: false,

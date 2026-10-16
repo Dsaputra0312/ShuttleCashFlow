@@ -2,7 +2,7 @@
   "id": "FEAT-007",
   "type": "feat",
   "description": "Tahap 5 (T5.6–T5.8 + T5.9) — Demo seed, README, and PWA: create demo seed data matching Req §5 example, reset script, comprehensive README, and full PWA setup (manifest, service worker, safe-area, status bar, back button). Requires FEAT-006 (all features stable). T5.10 (APK wrap) is a separate chore that requires external tooling — documented in README but not automated here.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "1. Create `src/db/seed-demo.ts`: inserts a complete demo dataset matching Req §5 — one pertemuan with the 6 example players (Andi, Budi, Cici, Dedi, Eko, Fani), sesi configurations that produce Andi Rp1.000, Budi Rp1.000, Cici Rp15.000, Dedi Rp11.000, Eko Rp0, Fani Rp12.000, corresponding peserta_pertemuan records with correct status, iuran records for Member players, and matching transaksi_kas. Script resets demo data idempotently (delete-then-insert for demo grup). (T5.6)",
     "2. Create `src/db/reset.ts`: drops and recreates all tables for the grup (use CASCADE), then re-runs seed.ts. For dev/test use only — guard with `NODE_ENV !== 'production'` check. (T5.6)",
@@ -29,5 +29,5 @@
     "pnpm lint"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Created src/db/seed-demo.ts with Req §5 dataset (6 players, 3 sesi, iuran, kas, matching expected bills). Created src/db/reset.ts with CASCADE drop guarded by NODE_ENV !== 'production'. Generated valid 192x192 and 512x512 PNG icons in public/icons/. Created public/manifest.json and public/sw.js (network-only). Registered SW in layout.tsx with PWA metadata and safe-area pb-safe styles in globals.css and BottomNav. Created comprehensive README.md. All verifications passed with 0 errors and 0 warnings."
 }

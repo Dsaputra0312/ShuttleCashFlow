@@ -4,6 +4,9 @@ import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
 
@@ -40,10 +43,12 @@ function PertemuanPageInner() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchList = useCallback(
     async (p: number) => {
       setLoading(true);
+      setError(null);
       try {
         const res = await fetch(`/api/v1/pertemuan?page=${p}&per_page=20`);
         const json = await res.json();
@@ -51,19 +56,27 @@ function PertemuanPageInner() {
           setList(json.data as Pertemuan[]);
           setPagination(json.meta.pagination);
         } else {
-          addToast(json.message ?? 'Gagal memuat data', 'error');
+          setError(json.message ?? 'Gagal memuat data');
         }
       } catch {
-        addToast('Terjadi kesalahan jaringan', 'error');
+        setError('Terjadi kesalahan jaringan');
       } finally {
         setLoading(false);
       }
     },
-    [addToast]
+    []
   );
 
   useEffect(() => {
-    fetchList(page);
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchList(page);
+      }
+    });
+    return () => {
+      ignore = true;
+    };
   }, [page, fetchList]);
 
   const handleCreate = async () => {
@@ -93,17 +106,17 @@ function PertemuanPageInner() {
       <h1 className="text-xl font-bold text-neutral-900 mb-4">Pertemuan</h1>
 
       <div className="flex flex-col gap-3">
-        {loading && (
-          <p className="text-neutral-500 text-sm text-center py-4">Memuat...</p>
+        {loading && <SkeletonList count={3} />}
+
+        {!loading && error && (
+          <ErrorState message={error} onRetry={() => fetchList(page)} />
         )}
 
-        {!loading && list.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-neutral-500 text-sm">Belum ada pertemuan</p>
-            <p className="text-neutral-400 text-xs mt-1">
-              Tekan tombol + untuk membuat pertemuan baru
-            </p>
-          </div>
+        {!loading && !error && list.length === 0 && (
+          <EmptyState
+            message="Belum ada pertemuan"
+            hint="Tekan tombol + untuk membuat pertemuan baru"
+          />
         )}
 
         {list.map((pt) => (

@@ -4,6 +4,8 @@ import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Stepper } from '@/components/ui/Stepper';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -91,7 +93,15 @@ function StokPageInner() {
   );
 
   useEffect(() => {
-    fetchStok(page);
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchStok(page);
+      }
+    });
+    return () => {
+      ignore = true;
+    };
   }, [page, fetchStok]);
 
   const handleBeli = async () => {
@@ -240,8 +250,13 @@ function StokPageInner() {
       {/* Riwayat */}
       <h2 className="font-semibold text-neutral-900 mb-3">Riwayat</h2>
 
+      {loading && <SkeletonList count={3} />}
+
       {!loading && (stok?.riwayat.data ?? []).length === 0 && (
-        <p className="text-sm text-neutral-500 text-center py-4">Belum ada riwayat</p>
+        <EmptyState
+          message="Belum ada riwayat"
+          hint="Riwayat pembelian dan koreksi stok akan muncul di sini"
+        />
       )}
 
       <div className="flex flex-col gap-2">

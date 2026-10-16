@@ -1,8 +1,13 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { eq, and, count, desc, gte, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { transaksi_kas, kategori_kas } from '@/db/schema';
+import { transaksi_kas, kategori_kas, pertemuan, pemain } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
 import { logActivity } from '@/features/activity-log/log-activity';
 import { parseListQuery } from '@/lib/query-helpers';
@@ -16,6 +21,7 @@ const createKasSchema = z.object({
   kategori_id: z.string().uuid('kategori_id tidak valid'),
   keterangan: z.string().optional().default(''),
   tanggal_transaksi: z.string().optional(),
+  pertemuan_id: z.string().uuid('pertemuan_id tidak valid').optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -105,7 +111,32 @@ export async function GET(request: NextRequest) {
 
     const total = totalRows[0]?.count ?? 0;
 
-    return paginatedResponse(rows, {
+    // Resolve any player UUIDs in keterangan
+    const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const hasUuid = rows.some((t) => uuidRegex.test(t.keterangan || ''));
+    let formattedRows = rows;
+
+    if (hasUuid) {
+      const allPemain = await dbClient
+        .select({ id: pemain.id, nama: pemain.nama })
+        .from(pemain)
+        .where(eq(pemain.grup_id, ctx.grupId));
+      const pMap = new Map(allPemain.map((p) => [p.id, p.nama]));
+
+      formattedRows = rows.map((t) => {
+        let ket = t.keterangan || '';
+        const match = ket.match(uuidRegex);
+        if (match && pMap.has(match[0])) {
+          const pName = pMap.get(match[0])!;
+          ket = ket
+            .replace(new RegExp(`pemain\\s+${match[0]}`, 'gi'), `— ${pName}`)
+            .replace(new RegExp(match[0], 'g'), pName);
+        }
+        return { ...t, keterangan: ket };
+      });
+    }
+
+    return paginatedResponse(formattedRows, {
       page,
       per_page,
       total,
@@ -170,6 +201,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (parsed.data.pertemuan_id) {
+      const pertemuanRows = await dbClient
+        .select({ id: pertemuan.id })
+        .from(pertemuan)
+        .where(
+          and(
+            eq(pertemuan.id, parsed.data.pertemuan_id),
+            eq(pertemuan.grup_id, ctx.grupId)
+          )
+        )
+        .limit(1);
+
+      if (!pertemuanRows[0]) {
+        return errorResponse('Pertemuan tidak ditemukan', undefined, 404);
+      }
+    }
+
     const rows = await dbClient
       .insert(transaksi_kas)
       .values({
@@ -178,6 +226,7 @@ export async function POST(request: NextRequest) {
         nominal: parsed.data.nominal,
         tipe: parsed.data.tipe,
         keterangan: parsed.data.keterangan,
+        pertemuan_id: parsed.data.pertemuan_id ?? null,
         dapat_diubah: true,
         dibuat_oleh_admin_id: ctx.adminId,
       })

@@ -1,8 +1,13 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { db } from '@/db';
-import { pertemuan, peserta_pertemuan } from '@/db/schema';
+import { pertemuan, peserta_pertemuan, sesi, sesi_pemain, pemain } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
 import { createTagihanTransaction } from '@/features/kas/auto-transactions';
 import { successResponse, errorResponse } from '@/lib/api-response';
@@ -72,12 +77,39 @@ export async function POST(request: NextRequest, { params }: Params) {
     if (!pesertaRows[0]) return errorResponse('Peserta tidak ditemukan', undefined, 404);
     const peserta = pesertaRows[0];
 
-    if (peserta.status_main !== 'selesai') {
-      return errorResponse(
-        'Peserta harus dalam status selesai sebelum bayar',
-        undefined,
-        400
-      );
+    if (peserta.status_main === 'lunas') {
+      return errorResponse('Peserta sudah berstatus lunas', undefined, 400);
+    }
+
+    if (peserta.status_main === 'bermain') {
+      // Check if player has any active draft sessions (bola_terpakai === 0)
+      const sesiRows = await dbClient
+        .select()
+        .from(sesi)
+        .where(and(eq(sesi.pertemuan_id, pertemuanId), eq(sesi.grup_id, ctx.grupId)));
+
+      const sesiIds = sesiRows.map((s) => s.id);
+      const sesiPemainRows = sesiIds.length
+        ? await dbClient
+            .select()
+            .from(sesi_pemain)
+            .where(inArray(sesi_pemain.sesi_id, sesiIds))
+        : [];
+
+      for (const s of sesiRows) {
+        if (s.bola_terpakai === 0) {
+          const pids = sesiPemainRows
+            .filter((sp) => sp.sesi_id === s.id)
+            .map((sp) => sp.pemain_id);
+          if (pids.includes(peserta.pemain_id)) {
+            return errorResponse(
+              `Pemain masih memiliki sesi main aktif di Lapangan ${s.lapangan}. Harap selesaikan sesi terlebih dahulu sebelum bayar.`,
+              undefined,
+              400
+            );
+          }
+        }
+      }
     }
 
     // Validate payment amount
@@ -89,12 +121,19 @@ export async function POST(request: NextRequest, { params }: Params) {
       );
     }
 
+    const pemainRows = await dbClient
+      .select({ nama: pemain.nama })
+      .from(pemain)
+      .where(and(eq(pemain.id, peserta.pemain_id), eq(pemain.grup_id, ctx.grupId)))
+      .limit(1);
+
     // Create auto-transactions (kas records)
     await createTagihanTransaction(dbClient, {
       grupId: ctx.grupId,
       pertemuanId,
       pesertaId,
       pemainId: peserta.pemain_id,
+      pemainNama: pemainRows[0]?.nama,
       adminId: ctx.adminId,
       tagihan: peserta.tagihan,
       dibayar: jumlah,
@@ -107,6 +146,7 @@ export async function POST(request: NextRequest, { params }: Params) {
         status_main: 'lunas',
         dibayar: jumlah,
         metode_bayar: metode,
+        selesai_pada: peserta.selesai_pada ?? new Date(),
       })
       .where(
         and(

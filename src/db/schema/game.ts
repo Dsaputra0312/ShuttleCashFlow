@@ -32,6 +32,8 @@ export const pertemuan = pgTable(
   (table) => [
     index('pertemuan_grup_id_idx').on(table.grup_id),
     index('pertemuan_tanggal_idx').on(table.tanggal),
+    // FEAT-006 T5.5: compound index for grup + tanggal date filtering
+    index('pertemuan_grup_tanggal_idx').on(table.grup_id, table.tanggal),
   ]
 );
 
@@ -76,6 +78,8 @@ export const sesi_pemain = pgTable(
     index('sesi_pemain_grup_id_idx').on(table.grup_id),
     index('sesi_pemain_sesi_id_idx').on(table.sesi_id),
     index('sesi_pemain_pemain_id_idx').on(table.pemain_id),
+    // FEAT-006 T5.5: compound index for grup + pemain lookups
+    index('sesi_pemain_grup_pemain_idx').on(table.grup_id, table.pemain_id),
   ]
 );
 
@@ -102,5 +106,7 @@ export const peserta_pertemuan = pgTable(
     index('peserta_pertemuan_grup_id_idx').on(table.grup_id),
     index('peserta_pertemuan_pertemuan_id_idx').on(table.pertemuan_id),
     index('peserta_pertemuan_pemain_id_idx').on(table.pemain_id),
+    // FEAT-006 T5.5: compound index for grup + pemain lookups
+    index('peserta_pertemuan_grup_pemain_idx').on(table.grup_id, table.pemain_id),
   ]
 );

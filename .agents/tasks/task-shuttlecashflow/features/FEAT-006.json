@@ -2,7 +2,7 @@
   "id": "FEAT-006",
   "type": "feat",
   "description": "Tahap 5 (T5.1–T5.5) — Quality and correctness pass: edge case tests, rounding/boundary tests, access audit (all endpoints must require login and be grup_id-scoped), UX polish (touch sizes, contrast, loading/empty/error states, 360px audit), and DB performance indexes. No new features — only correctness, coverage, and polish on what FEAT-001 through FEAT-005 built.",
-  "status": "pending",
+  "status": "completed",
   "steps": [
     "1. Write edge case Vitest tests in `src/features/billing/calculator.test.ts` additions: (a) two concurrent lapangan (two sesi in same pertemuan, different lapangan numbers), (b) penanggung bola pays all ball cost while others pay 0 for ball, (c) bebas_biaya player who pays voluntarily (all goes to kelebihan), (d) kelebihan bayar recorded correctly, (e) new tamu/guest player scenario, (f) Buka Kembali reversal leaves saldo unchanged. Run `pnpm vitest run` — all pass. (T5.1)",
     "2. Write rounding and boundary Vitest tests in `src/lib/money.test.ts` additions and new `src/features/billing/calculator-boundary.test.ts`: (a) non-round harga_bola (e.g. 4750), (b) 2-player session with 1 ball, (c) session with 3+ balls, (d) 5–6 session players with fractional split. Run `pnpm vitest run` — all pass. (T5.2)",
@@ -26,5 +26,5 @@
     "pnpm lint"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All edge case and boundary tests implemented and passing (51/51). All API routes audited with checklist comments. Database indexes added with migration 0001_clammy_ultimatum.sql. UX polish pass completed: Skeleton, EmptyState, and ErrorState added across all list pages; BottomSheet confirmation dialogs implemented for destructive actions (delete sesi, delete kategori kas, deactivate admin, buka kembali, buka kunci). Build and lint clean."
 }

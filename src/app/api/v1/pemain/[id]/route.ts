@@ -1,8 +1,13 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';
 import { db } from '@/db';
-import { pemain } from '@/db/schema';
+import { pemain, iuran } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
 import { logActivity } from '@/features/activity-log/log-activity';
 import { successResponse, errorResponse } from '@/lib/api-response';
@@ -39,7 +44,28 @@ export async function GET(
   try {
     const row = await findPemain(ctx.grupId, id);
     if (!row) return errorResponse('Pemain tidak ditemukan', undefined, 404);
-    return successResponse(row);
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    const iuranRows = await db()
+      .select({ id: iuran.id })
+      .from(iuran)
+      .where(
+        and(
+          eq(iuran.grup_id, ctx.grupId),
+          eq(iuran.pemain_id, id),
+          eq(iuran.periode_tahun, currentYear),
+          eq(iuran.periode_bulan, currentMonth)
+        )
+      )
+      .limit(1);
+
+    return successResponse({
+      ...row,
+      is_member: iuranRows.length > 0,
+    });
   } catch (err) {
     console.error('[GET /pemain/[id]]', err);
     return errorResponse('Terjadi kesalahan server', undefined, 500);

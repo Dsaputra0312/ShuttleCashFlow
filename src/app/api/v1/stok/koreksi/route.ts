@@ -1,6 +1,10 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [✓] getGrupContext() called — 401 returned if session missing/invalid
+// [✓] All DB queries scoped with grup_id from session context
+// [✓] No cross-grup data leakage possible
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { koreksi_stok } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';

@@ -82,8 +82,16 @@ export default function BerandaPage() {
 
   // Initialise dates on client only to avoid Next.js prerender error
   useEffect(() => {
-    setTanggal(getTodayWIB());
-    setBulan(getCurrentMonthWIB());
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        setTanggal(getTodayWIB());
+        setBulan(getCurrentMonthWIB());
+      }
+    });
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const fetchDashboard = useCallback(async (f: Filter, tgl: string, bln: string) => {
@@ -104,7 +112,15 @@ export default function BerandaPage() {
 
   useEffect(() => {
     if (!tanggal || !bulan) return;
-    fetchDashboard(filter, tanggal, bulan);
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchDashboard(filter, tanggal, bulan);
+      }
+    });
+    return () => {
+      ignore = true;
+    };
   }, [filter, tanggal, bulan, fetchDashboard]);
 
   return (

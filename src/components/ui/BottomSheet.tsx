@@ -64,7 +64,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
             <h2 className="text-base font-semibold text-neutral-900">{title}</h2>
           </div>
         )}
-        <div className="p-4 pb-safe overflow-y-auto max-h-[80vh]">{children}</div>
+        <div className="p-4 pb-8 overflow-y-auto max-h-[85vh]">{children}</div>
       </div>
       <style>{`
         @keyframes slideUp {

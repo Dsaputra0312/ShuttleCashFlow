@@ -1,3 +1,7 @@
+// FEAT-006 T5.3 Auth+Scoping Checklist:
+// [–] Intentionally public — login endpoint (no session yet)
+// [–] No grup-scoped data returned; validates credentials only
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { eq, and } from 'drizzle-orm';

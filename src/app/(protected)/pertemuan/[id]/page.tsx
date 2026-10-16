@@ -5,6 +5,8 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { SkeletonList } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -72,7 +74,15 @@ function PertemuanDetailPageInner() {
   }, [pertemuanId, addToast]);
 
   useEffect(() => {
-    fetchPertemuan();
+    let ignore = false;
+    void Promise.resolve().then(() => {
+      if (!ignore) {
+        fetchPertemuan();
+      }
+    });
+    return () => {
+      ignore = true;
+    };
   }, [fetchPertemuan]);
 
   const handleKunci = async () => {
@@ -150,17 +160,24 @@ function PertemuanDetailPageInner() {
 
   if (loading) {
     return (
-      <div className="p-4 text-center text-sm text-neutral-500">Memuat...</div>
+      <div className="p-4">
+        <SkeletonList count={3} />
+      </div>
     );
   }
 
   if (!pertemuan) {
     return (
       <div className="p-4">
-        <p className="text-neutral-500">Pertemuan tidak ditemukan.</p>
-        <Link href="/pertemuan" className="text-primary-600 text-sm mt-2 inline-block">
-          ← Kembali
-        </Link>
+        <EmptyState
+          message="Pertemuan tidak ditemukan"
+          hint="Pertemuan mungkin telah dihapus"
+        />
+        <div className="text-center mt-4">
+          <Link href="/pertemuan" className="text-primary-600 text-sm inline-block">
+            ← Kembali
+          </Link>
+        </div>
       </div>
     );
   }
