@@ -288,23 +288,41 @@ export default function KasPage() {
         </div>
       )}
 
-      {/* FAB — two buttons */}
-      <div className="fixed bottom-20 right-4 z-30 flex flex-col gap-2">
+      {/* FAB — two buttons (symmetrical and centered) */}
+      <div className="fixed bottom-20 right-4 z-30 flex flex-col items-center gap-2.5">
         <button
           type="button"
           onClick={() => openAdd('pengeluaran')}
           aria-label="Tambah pengeluaran"
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-danger-600 text-white shadow-lg active:bg-danger-700 text-xs font-bold"
+          className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-danger-600 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 active:bg-danger-700"
         >
-          −
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
+          </svg>
         </button>
         <button
           type="button"
           onClick={() => openAdd('pemasukan')}
           aria-label="Tambah pemasukan"
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg active:bg-primary-700 text-2xl font-bold"
+          className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary-600 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 active:bg-primary-700"
         >
-          +
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
         </button>
       </div>
 

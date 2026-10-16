@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { formatRupiah } from '@/lib/money';
+import { formatStokBola } from '@/lib/stock';
 
 type Filter = 'harian' | 'bulanan';
 
@@ -25,6 +26,7 @@ interface RingkasanPertemuan {
 interface DashboardData {
   saldo_kas: number;
   stok_bola: number;
+  stok_bola_formatted?: string;
   total_pemasukan: number;
   total_pengeluaran: number;
   filter: Filter;
@@ -185,8 +187,11 @@ export default function BerandaPage() {
 
             <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
               <p className="text-xs text-neutral-500 mb-1">Stok Bola</p>
-              <p className="text-lg font-bold text-neutral-900">
-                {data?.stok_bola ?? 0} <span className="text-sm font-normal text-neutral-500">bola</span>
+              <p className="text-base font-bold text-neutral-900 leading-tight">
+                {data?.stok_bola_formatted ?? formatStokBola(data?.stok_bola ?? 0)}
+              </p>
+              <p className="text-[11px] text-neutral-500 mt-0.5">
+                Total {data?.stok_bola ?? 0} biji
               </p>
             </div>
 

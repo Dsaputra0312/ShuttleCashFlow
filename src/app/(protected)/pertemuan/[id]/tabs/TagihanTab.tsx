@@ -475,7 +475,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {rincianSheet.peserta.is_member ? (
                     <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-                      Member (Bebas Lapangan & Bola)
+                      Member (Bebas Biaya Lapangan)
                     </span>
                   ) : rincianSheet.peserta.bebas_biaya ? (
                     <span className="text-[10px] font-semibold bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
@@ -555,7 +555,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                             ? '⭐ Ditanggung sendiri'
                             : s.bearer_nama
                             ? `Ditanggung ${s.bearer_nama}`
-                            : rincianSheet.peserta.is_member
+                            : rincianSheet.peserta.bebas_biaya
                             ? 'Bebas biaya'
                             : `${s.bola_terpakai} bola`}
                         </span>

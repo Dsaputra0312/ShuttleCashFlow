@@ -111,7 +111,7 @@ const CONFIG: KonfigurasiInput = {
 };
 
 describe('hitungTagihan - basic rules', () => {
-  it('member pays 0 for both ball and court', () => {
+  it('member pays only ball cost, court is free (0)', () => {
     const pemain: PemainInput[] = [
       { id: 'A', bebas_biaya: false, is_member: true },
       { id: 'B', bebas_biaya: false, is_member: false },
@@ -129,9 +129,12 @@ describe('hitungTagihan - basic rules', () => {
     const tagihanA = result.tagihan_per_pemain.find((t) => t.pemain_id === 'A')!;
     const tagihanB = result.tagihan_per_pemain.find((t) => t.pemain_id === 'B')!;
 
-    expect(tagihanA.tagihan).toBe(0); // member pays 0 for ball and court
+    expect(tagihanA.biaya_lapangan_raw).toBe(0); // member pays 0 for court
+    expect(tagihanA.biaya_bola_raw).toBe(10000); // member pays for balls
+    expect(tagihanA.tagihan).toBe(10000);
     expect(tagihanB.biaya_lapangan_raw).toBe(10000); // non-member pays lapangan
-    expect(tagihanB.biaya_bola_raw).toBe(10000); // non-member pays full 2 balls (10000/2=5000, only B pays)
+    expect(tagihanB.biaya_bola_raw).toBe(10000); // non-member pays balls
+    expect(tagihanB.tagihan).toBe(20000);
   });
 
   it('bebas_biaya player has tagihan=0 regardless of sessions', () => {
@@ -450,7 +453,7 @@ describe('hitungTagihan - edge cases (FEAT-006)', () => {
       {
         id: 's1',
         lapangan: 1,
-        bola_terpakai: 2, // 10000 total; only the 1 non-member pays → 10000
+        bola_terpakai: 2, // 10000 total per player
         ditanggung_oleh_pemain_id: null,
         pemain_ids: ['host', 'tamu'],
       },
@@ -459,9 +462,11 @@ describe('hitungTagihan - edge cases (FEAT-006)', () => {
     const tHost = result.tagihan_per_pemain.find((t) => t.pemain_id === 'host')!;
     const tTamu = result.tagihan_per_pemain.find((t) => t.pemain_id === 'tamu')!;
 
-    // Member host pays nothing
-    expect(tHost.tagihan).toBe(0);
-    // Guest pays full bola (only non-member) + lapangan = 10000 + 10000 = 20000
+    // Member host pays ball cost but court is free
+    expect(tHost.biaya_bola_raw).toBe(10000);
+    expect(tHost.biaya_lapangan_raw).toBe(0);
+    expect(tHost.tagihan).toBe(10000);
+    // Guest pays full bola + lapangan = 10000 + 10000 = 20000
     expect(tTamu.biaya_bola_raw).toBe(10000);
     expect(tTamu.biaya_lapangan_raw).toBe(10000);
     expect(tTamu.tagihan).toBe(20000);

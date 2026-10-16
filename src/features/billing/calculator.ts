@@ -11,10 +11,10 @@ import type {
  * Calculate billing for all players in a meeting.
  *
  * Rules:
- * - Each session: ball cost is split equally among all players in that session.
+ * - Each session: ball cost is paid by players in that session (including member).
  *   - If ditanggung_oleh_pemain_id is set, that player bears the full ball cost for this session.
- *   - Member players pay Rp 0 for their share of ball cost (unless they are the bearer).
- * - Court cost per session: non-member players each pay biaya_lapangan_non_member.
+ *   - Member players pay for their ball cost (only court fee is exempt).
+ * - Court cost per meeting: non-member players each pay biaya_lapangan_non_member if they played >= 1 session.
  *   Member players pay Rp 0 for court.
  * - bebas_biaya players: tagihan forced to 0 regardless of sessions played.
  * - Rounding: each player's total is rounded UP to the nearest kelipatan_pembulatan.
@@ -58,14 +58,9 @@ export function hitungTagihan(
           bolaCost = 0;
         }
       } else {
-        // Non-members pay ball cost for the balls used in this session; members pay 0
-        const pemain = pemainMap.get(pemainId);
-        const isMember = pemain?.is_member ?? false;
-        if (!isMember) {
-          bolaCost = sesi.bola_terpakai * harga_bola_per_biji;
-        } else {
-          bolaCost = 0;
-        }
+        // Both members and non-members pay ball cost for the balls used in this session.
+        // Members are only exempt from court fee, NOT ball cost.
+        bolaCost = sesi.bola_terpakai * harga_bola_per_biji;
       }
       rawBola.set(pemainId, (rawBola.get(pemainId) ?? 0) + bolaCost);
     }

@@ -6,10 +6,11 @@
 import { NextRequest } from 'next/server';
 import { eq, sum, count, desc } from 'drizzle-orm';
 import { db } from '@/db';
-import { pembelian_bola, koreksi_stok, sesi, konfigurasi_grup } from '@/db/schema';
+import { pembelian_bola, koreksi_stok, sesi } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
 import { parseListQuery } from '@/lib/query-helpers';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { formatStokBola } from '@/lib/stock';
 
 export async function GET(request: NextRequest) {
   let ctx;
@@ -28,17 +29,10 @@ export async function GET(request: NextRequest) {
   try {
     const dbClient = db();
 
-    // Load config for stok_awal and isi_per_tabung
-    const konfigs = await dbClient
-      .select({ stok_awal: konfigurasi_grup.stok_awal, isi_per_tabung: konfigurasi_grup.isi_per_tabung })
-      .from(konfigurasi_grup)
-      .where(eq(konfigurasi_grup.grup_id, ctx.grupId))
-      .limit(1);
+    // 1 tabung = 12 biji
+    const isiPerTabung = 12;
 
-    const stokAwal = konfigs[0]?.stok_awal ?? 0;
-    const isiPerTabung = konfigs[0]?.isi_per_tabung ?? 12;
-
-    // Calculate stok saat ini
+    // Calculate stok saat ini: total pembelian (biji) + total koreksi (biji) - total terpakai di sesi (biji)
     const [pembelianSum, koreksiSum, sesiSum] = await Promise.all([
       dbClient
         .select({ total: sum(pembelian_bola.jumlah_tabung) })
@@ -54,12 +48,12 @@ export async function GET(request: NextRequest) {
         .where(eq(sesi.grup_id, ctx.grupId)),
     ]);
 
-    const totalPembelian =
-      (parseInt(pembelianSum[0]?.total ?? '0', 10) || 0) * isiPerTabung;
+    const totalPembelianTabung = parseInt(pembelianSum[0]?.total ?? '0', 10) || 0;
+    const totalPembelianBola = totalPembelianTabung * isiPerTabung;
     const totalKoreksi = parseInt(koreksiSum[0]?.total ?? '0', 10) || 0;
     const totalTerpakai = parseInt(sesiSum[0]?.total ?? '0', 10) || 0;
 
-    const stokSaatIni = stokAwal + totalPembelian + totalKoreksi - totalTerpakai;
+    const stokSaatIni = totalPembelianBola + totalKoreksi - totalTerpakai;
 
     // Get riwayat (paginated) — combine pembelian and koreksi
     const [totalPembelianRows, totalKoreksiRows] = await Promise.all([
@@ -105,10 +99,14 @@ export async function GET(request: NextRequest) {
 
     return successResponse({
       stok_saat_ini: stokSaatIni,
-      stok_awal: stokAwal,
-      total_pembelian_bola: totalPembelian,
+      stok_saat_ini_formatted: formatStokBola(stokSaatIni),
+      stok_tabung: Math.floor(Math.max(0, stokSaatIni) / isiPerTabung),
+      stok_biji: Math.max(0, stokSaatIni) % isiPerTabung,
+      total_pembelian_tabung: totalPembelianTabung,
+      total_pembelian_bola: totalPembelianBola,
       total_koreksi: totalKoreksi,
       total_terpakai: totalTerpakai,
+      isi_per_tabung: isiPerTabung,
       riwayat: {
         data: merged,
         meta: {

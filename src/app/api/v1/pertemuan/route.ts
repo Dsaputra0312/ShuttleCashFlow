@@ -5,9 +5,9 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { eq, count, desc } from 'drizzle-orm';
+import { eq, count, desc, and, inArray } from 'drizzle-orm';
 import { db } from '@/db';
-import { pertemuan, konfigurasi_grup } from '@/db/schema';
+import { pertemuan, konfigurasi_grup, peserta_pertemuan } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
 import { logActivity } from '@/features/activity-log/log-activity';
 import { parseListQuery } from '@/lib/query-helpers';
@@ -63,7 +63,35 @@ export async function GET(request: NextRequest) {
 
     const total = totalRows[0]?.count ?? 0;
 
-    return paginatedResponse(rows, {
+    const pertemuanIds = rows.map((r) => r.id);
+    const pesertaCountMap = new Map<string, number>();
+
+    if (pertemuanIds.length > 0) {
+      const pesertaCounts = await dbClient
+        .select({
+          pertemuan_id: peserta_pertemuan.pertemuan_id,
+          count: count(peserta_pertemuan.id),
+        })
+        .from(peserta_pertemuan)
+        .where(
+          and(
+            eq(peserta_pertemuan.grup_id, ctx.grupId),
+            inArray(peserta_pertemuan.pertemuan_id, pertemuanIds)
+          )
+        )
+        .groupBy(peserta_pertemuan.pertemuan_id);
+
+      for (const pc of pesertaCounts) {
+        pesertaCountMap.set(pc.pertemuan_id, Number(pc.count));
+      }
+    }
+
+    const data = rows.map((r) => ({
+      ...r,
+      jumlah_peserta: pesertaCountMap.get(r.id) ?? 0,
+    }));
+
+    return paginatedResponse(data, {
       page,
       per_page,
       total,
