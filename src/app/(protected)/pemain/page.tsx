@@ -175,17 +175,14 @@ export default function PemainPage() {
       />
 
       <div className="mt-4 flex flex-col gap-3">
-        {loading && <SkeletonList count={4} />}
-
-        {!loading && error && (
+        {loading ? (
+          <SkeletonList count={4} />
+        ) : error ? (
           <ErrorState message={error} onRetry={() => fetchPemain(search, page)} />
-        )}
-
-        {!loading && !error && pemainList.length === 0 && (
+        ) : pemainList.length === 0 ? (
           <EmptyState message="Belum ada pemain" hint="Tekan tombol + untuk menambah pemain" />
-        )}
-
-        {pemainList.map((p) => (
+        ) : (
+          pemainList.map((p) => (
           <div
             key={p.id}
             className="w-full bg-white rounded-xl border border-neutral-200 shadow-sm p-4 transition-all"
@@ -244,7 +241,8 @@ export default function PemainPage() {
               </div>
             </div>
           </div>
-        ))}
+        ))
+      )}
       </div>
 
       {/* Pagination */}

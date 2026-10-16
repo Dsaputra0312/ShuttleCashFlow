@@ -223,45 +223,45 @@ export default function KasPage() {
       </div>
 
       {/* List */}
-      {loading && <SkeletonList count={4} />}
-
-      {!loading && list.length === 0 && (
+      {loading ? (
+        <SkeletonList count={4} />
+      ) : list.length === 0 ? (
         <EmptyState
           message="Belum ada transaksi"
           hint="Transaksi kas akan muncul di sini"
         />
-      )}
-
-      <div className="flex flex-col gap-2">
-        {list.map((t) => (
-          <div
-            key={t.id}
-            className="flex items-start gap-3 bg-white rounded-xl border border-neutral-200 shadow-sm p-3"
-          >
-            <Badge
-              label={t.tipe === 'pemasukan' ? 'Masuk' : 'Keluar'}
-              variant={t.tipe === 'pemasukan' ? 'success' : 'danger'}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-neutral-900">
-                {formatRupiah(t.nominal)}
+      ) : (
+        <div className="flex flex-col gap-2">
+          {list.map((t) => (
+            <div
+              key={t.id}
+              className="flex items-start gap-3 bg-white rounded-xl border border-neutral-200 shadow-sm p-3"
+            >
+              <Badge
+                label={t.tipe === 'pemasukan' ? 'Masuk' : 'Keluar'}
+                variant={t.tipe === 'pemasukan' ? 'success' : 'danger'}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-neutral-900">
+                  {formatRupiah(t.nominal)}
+                </p>
+                {t.keterangan && (
+                  <p className="text-xs text-neutral-500 mt-0.5 truncate">{t.keterangan}</p>
+                )}
+                {t.kategori_nama && (
+                  <p className="text-xs text-neutral-400">{t.kategori_nama}</p>
+                )}
+              </div>
+              <p className="text-xs text-neutral-400 shrink-0">
+                {new Date(t.dibuat_pada).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'short',
+                })}
               </p>
-              {t.keterangan && (
-                <p className="text-xs text-neutral-500 mt-0.5 truncate">{t.keterangan}</p>
-              )}
-              {t.kategori_nama && (
-                <p className="text-xs text-neutral-400">{t.kategori_nama}</p>
-              )}
             </div>
-            <p className="text-xs text-neutral-400 shrink-0">
-              {new Date(t.dibuat_pada).toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'short',
-              })}
-            </p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
       {pagination && pagination.total_pages > 1 && (

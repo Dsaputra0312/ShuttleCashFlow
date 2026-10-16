@@ -21,7 +21,8 @@ async function main() {
   console.log('🌱 Starting seed...');
 
   // 1. Insert initial grup (upsert by kode_unik)
-  const kodeUnik = 'badminton-grup-a';
+  const kodeUnik = process.env.SEED_GRUP_KODE || 'badminton-grup-a';
+  const grupNama = process.env.SEED_GRUP_NAMA || 'Badminton Grup A';
   let grupRow = await db.query.grup.findFirst({
     where: eq(schema.grup.kode_unik, kodeUnik),
   });
@@ -29,38 +30,40 @@ async function main() {
   if (!grupRow) {
     const inserted = await db
       .insert(schema.grup)
-      .values({ nama: 'Badminton Grup A', kode_unik: kodeUnik })
+      .values({ nama: grupNama, kode_unik: kodeUnik })
       .returning();
     grupRow = inserted[0];
-    console.log('✓ Grup created:', grupRow.id);
+    console.log('✓ Grup created:', grupRow.id, `(${grupNama})`);
   } else {
     console.log('✓ Grup already exists:', grupRow.id);
   }
 
   const grupId = grupRow.id;
 
-  // 2. Insert admin (upsert by email+grup_id)
-  const adminEmail = 'admin@example.com';
+  // 2. Insert admin (upsert by email)
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@example.com';
+  const adminNama = process.env.SEED_ADMIN_NAMA || 'Admin Utama';
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'admin123';
   let adminRow = await db.query.admin.findFirst({
     where: eq(schema.admin.email, adminEmail),
   });
 
   if (!adminRow) {
-    const passwordHash = await hashPassword('admin123');
+    const passwordHash = await hashPassword(adminPassword);
     const inserted = await db
       .insert(schema.admin)
       .values({
         grup_id: grupId,
-        nama: 'Admin Utama',
+        nama: adminNama,
         email: adminEmail,
         password_hash: passwordHash,
         aktif: true,
       })
       .returning();
     adminRow = inserted[0];
-    console.log('✓ Admin created:', adminRow.id);
+    console.log('✓ Admin created:', adminRow.id, `(${adminEmail})`);
   } else {
-    console.log('✓ Admin already exists:', adminRow.id);
+    console.log('✓ Admin already exists:', adminRow.id, `(${adminEmail})`);
   }
 
   // 3. Insert konfigurasi_grup (upsert by grup_id)

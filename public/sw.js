@@ -1,10 +1,10 @@
 // ShuttleCashFlow Service Worker with Offline Fallback
-const CACHE_NAME = 'shuttlecashflow-v1';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'shuttlecashflow-v2';
+const STATIC_ASSETS = ['/offline.html', '/images/splash.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll([OFFLINE_URL]))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
   self.skipWaiting();
 });
@@ -29,7 +29,17 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return caches.match(OFFLINE_URL);
+        return caches.match('/offline.html');
+      })
+    );
+    return;
+  }
+
+  // Static assets (like splash.png) -> Cache First with Network Fallback
+  if (event.request.url.includes('/images/splash.png')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        return cached || fetch(event.request);
       })
     );
     return;

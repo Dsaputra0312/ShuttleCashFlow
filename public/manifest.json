@@ -37,6 +37,15 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/splash.png",
+      "sizes": "941x1672",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "ShuttleCashFlow Splash Screen"
+    }
   ]
 }
 

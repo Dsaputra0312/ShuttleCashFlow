@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar';
+import { SplashScreen } from '@/components/layout/SplashScreen';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -10,6 +11,11 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'default',
     title: 'ShuttleCashFlow',
+    startupImage: [
+      {
+        url: '/images/splash.png',
+      },
+    ],
   },
 };
 
@@ -28,7 +34,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className="h-full">
+      <head>
+        <link rel="preload" as="image" href="/images/splash.png" />
+      </head>
       <body className="min-h-full bg-neutral-50 antialiased">
+        <SplashScreen />
         <ServiceWorkerRegistrar />
         {children}
       </body>

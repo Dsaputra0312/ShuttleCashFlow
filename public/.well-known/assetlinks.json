@@ -7,6 +7,7 @@
             "namespace": "android_app",
             "package_name": "app.vercel.shuttle_cash_flow.twa",
             "sha256_cert_fingerprints": [
+                "3F:0C:82:70:64:41:3A:60:A9:92:E2:34:12:1D:1E:60:0A:B0:8F:BB:FD:7C:65:12:03:24:5B:A8:56:13:DE:A6",
                 "48:98:EA:7D:8A:45:69:CA:AB:D3:DC:58:A5:0E:2F:05:0D:E4:26:FE:E9:B3:A9:22:89:93:56:19:C1:37:EB:7B"
             ]
         }
