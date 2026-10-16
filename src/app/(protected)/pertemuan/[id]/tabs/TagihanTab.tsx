@@ -90,11 +90,6 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
   const [iuranLoading, setIuranLoading] = useState(false);
   const [iuranError, setIuranError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const d = new Date();
-    setIuranTahun(d.getFullYear());
-    setIuranBulan(d.getMonth() + 1);
-  }, []);
 
   // Buka kembali sheet
   const [bukaSheet, setBukaSheet] = useState<PesertaWithNama | null>(null);

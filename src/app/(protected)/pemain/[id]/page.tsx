@@ -70,11 +70,6 @@ function PemainDetailPageInner() {
   const [iuranLoading, setIuranLoading] = useState(false);
   const [iuranError, setIuranError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const d = new Date();
-    setIuranTahun(d.getFullYear());
-    setIuranBulan(d.getMonth() + 1);
-  }, []);
 
   const fetchPemain = useCallback(async () => {
     try {
