@@ -48,6 +48,12 @@ const menuItems: MenuItem[] = [
     description: 'Kelola stok dan pembelian bola',
     icon: '🏸',
   },
+  {
+    href: '/kas?penyesuaian=true',
+    label: 'Penyesuaian Kas',
+    description: 'Sesuaikan saldo fisik kas (opname / koreksi)',
+    icon: '💰',
+  },
 ];
 
 export default function LainnyaPage() {
