@@ -1,7 +1,15 @@
 import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import { ServiceWorkerRegistrar } from '@/components/ServiceWorkerRegistrar';
 import { SplashScreen } from '@/components/layout/SplashScreen';
 import './globals.css';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-plus-jakarta-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'ShuttleCashFlow',
@@ -24,7 +32,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: 'cover',
-  themeColor: '#2563eb',
+  themeColor: '#28408F',
 };
 
 export default function RootLayout({
@@ -33,11 +41,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className="h-full">
+    <html lang="id" className={`h-full ${plusJakartaSans.variable}`}>
       <head>
         <link rel="preload" as="image" href="/images/splash.png" />
       </head>
-      <body className="min-h-full bg-neutral-50 antialiased">
+      <body className="min-h-full bg-peach-50 antialiased">
         <SplashScreen />
         <ServiceWorkerRegistrar />
         {children}
