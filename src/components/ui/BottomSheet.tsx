@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
+import { AppIcon } from './AppIcon';
 
 interface BottomSheetProps {
   open: boolean;
@@ -51,7 +53,7 @@ export function BottomSheet({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/50"
+        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs transition-opacity"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -71,16 +73,24 @@ export function BottomSheet({
         </div>
 
         {title && (
-          <div className="shrink-0 border-b border-line px-4 pb-3 pt-1">
-            <h2 className="text-heading font-heading text-ink-900">{title}</h2>
+          <div className="shrink-0 border-b border-line px-5 pb-3 pt-1 flex items-center justify-between">
+            <h2 className="text-heading font-heading font-bold text-ink-900">{title}</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 -mr-1 rounded-full text-ink-400 hover:text-ink-700 hover:bg-peach-100 active:scale-95 transition-all focus:outline-none"
+              aria-label="Tutup"
+            >
+              <AppIcon icon={X} size="sm" />
+            </button>
           </div>
         )}
 
         {/* Scrollable body */}
         <div
           className={[
-            'overflow-y-auto p-4',
-            stickyBottom ? 'max-h-[75vh]' : 'max-h-[85vh] pb-8',
+            'overflow-y-auto px-5 py-4',
+            stickyBottom ? 'max-h-[70vh]' : 'max-h-[82vh] pb-8',
           ].join(' ')}
           style={{ paddingBottom: stickyBottom ? undefined : 'max(env(safe-area-inset-bottom), 32px)' }}
         >
