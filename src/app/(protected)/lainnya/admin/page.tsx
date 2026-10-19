@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { ListRow } from '@/components/ui/ListRow';
 import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
@@ -163,7 +162,7 @@ export default function AdminPage() {
         )}
 
         {!loading && admins.length > 0 && (
-          <Card padding={false} className="overflow-hidden flex flex-col">
+          <div className="flex flex-col gap-2.5">
             {admins.map((a) => (
               <ListRow
                 key={a.id}
@@ -189,7 +188,7 @@ export default function AdminPage() {
                 }
               />
             ))}
-          </Card>
+          </div>
         )}
 
         <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Tambah Admin">

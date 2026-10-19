@@ -14,7 +14,6 @@ import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchField } from '@/components/ui/SearchField';
-import { ListRow } from '@/components/ui/ListRow';
 import { Avatar } from '@/components/ui/Avatar';
 import { IconButton } from '@/components/ui/IconButton';
 import { PemainForm, type PemainFormValues } from '@/components/pemain/PemainForm';
@@ -281,7 +280,7 @@ export default function PemainPage() {
           aria-label="Cari pemain"
         />
 
-        <div className="flex flex-col gap-0 rounded-xl overflow-hidden border border-line">
+        <div className="flex flex-col gap-3">
           {loading ? (
             <SkeletonList count={4} />
           ) : error ? (
@@ -292,35 +291,54 @@ export default function PemainPage() {
             pemainList.map((p) => {
               const isLoadingAction = actionLoadingId === p.id;
               return (
-                <div key={p.id} className="bg-surface">
-                  <ListRow
-                    left={<Avatar name={p.nama} size="md" />}
-                    title={p.nama}
-                    subtitle={p.no_hp ?? undefined}
-                    right={
-                      <div className="flex flex-col items-end gap-1">
-                        {p.is_member ? (
-                          p.iuran_status === 'bayar_nanti' ? (
-                            <Badge label="Member (Bayar Nanti)" variant="warning" />
-                          ) : p.iuran_status === 'gratis' ? (
-                            <Badge label="Member (Gratis)" variant="info" />
-                          ) : (
-                            <Badge label="Member" variant="member" />
-                          )
+                <div
+                  key={p.id}
+                  className="bg-surface rounded-2xl border border-line/80 shadow-card p-4 transition-all hover:shadow-float"
+                >
+                  {/* Header info baris pemain */}
+                  <div
+                    onClick={() => router.push(`/pemain/${p.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        router.push(`/pemain/${p.id}`);
+                      }
+                    }}
+                    className="group flex items-center gap-3.5 cursor-pointer"
+                  >
+                    <Avatar name={p.nama} size="md" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors truncate text-[15px]">
+                        {p.nama}
+                      </p>
+                      {p.no_hp && (
+                        <p className="text-caption text-ink-600 mt-0.5 truncate">{p.no_hp}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      {p.is_member ? (
+                        p.iuran_status === 'bayar_nanti' ? (
+                          <Badge label="Member (Bayar Nanti)" variant="warning" />
+                        ) : p.iuran_status === 'gratis' ? (
+                          <Badge label="Member (Gratis)" variant="info" />
                         ) : (
-                          <Badge label="Non-Member" variant="non-member" />
-                        )}
-                        {p.bebas_biaya && <Badge label="Bebas Biaya" variant="bebas-biaya" />}
-                        <Badge
-                          label={p.aktif ? 'Aktif' : 'Nonaktif'}
-                          variant={p.aktif ? 'aktif' : 'non-aktif'}
-                        />
-                      </div>
-                    }
-                    onPress={() => router.push(`/pemain/${p.id}`)}
-                  />
-                  {/* Quick Actions Row */}
-                  <div className="px-4 pb-3 pt-1 flex items-center justify-end gap-1.5 flex-wrap border-b border-line last:border-b-0">
+                          <Badge label="Member" variant="member" />
+                        )
+                      ) : (
+                        <Badge label="Non-Member" variant="non-member" />
+                      )}
+                      {p.bebas_biaya && <Badge label="Bebas Biaya" variant="bebas-biaya" />}
+                      <Badge
+                        label={p.aktif ? 'Aktif' : 'Nonaktif'}
+                        variant={p.aktif ? 'aktif' : 'non-aktif'}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Tombol Aksi di bagian bawah kartu */}
+                  <div className="mt-3.5 pt-3 border-t border-line/60 flex items-center justify-end gap-2 flex-wrap">
                     {!p.is_member ? (
                       <>
                         <Button
@@ -369,13 +387,13 @@ export default function PemainPage() {
                         disabled={isLoadingAction}
                         title="Batalkan status membership bulan ini"
                       >
-                        Batal Member
+                        {isLoadingAction ? 'Memproses...' : 'Batal Member'}
                       </Button>
                     )}
 
                     <Button
                       size="sm"
-                      variant="secondary"
+                      variant="tonal"
                       onClick={() => openEdit(p)}
                     >
                       Edit

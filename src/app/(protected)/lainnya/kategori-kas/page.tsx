@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Card } from '@/components/ui/Card';
 import { ListRow } from '@/components/ui/ListRow';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -178,7 +177,7 @@ export default function KategoriKasPage() {
         )}
 
         {!loading && list.length > 0 && (
-          <Card padding={false} className="overflow-hidden flex flex-col">
+          <div className="flex flex-col gap-2.5">
             {list.map((k) => (
               <ListRow
                 key={k.id}
@@ -207,7 +206,7 @@ export default function KategoriKasPage() {
                 }
               />
             ))}
-          </Card>
+          </div>
         )}
 
         <BottomSheet

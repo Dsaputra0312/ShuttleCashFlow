@@ -8,7 +8,6 @@ import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Avatar } from '@/components/ui/Avatar';
-import { ListRow } from '@/components/ui/ListRow';
 import { formatRupiah } from '@/lib/money';
 
 const BULAN = [
@@ -359,82 +358,104 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
         />
       )}
 
-      <div className="flex flex-col gap-0 rounded-xl overflow-hidden border border-line">
+      <div className="flex flex-col gap-3">
         {pesertaList.map((p) => (
-          <div key={p.id} className="bg-surface">
-            <ListRow
-              left={<Avatar name={p.nama} size="md" />}
-              title={p.nama}
-              subtitle={
-                p.is_member
-                  ? `Member · ${formatRupiah(p.tagihan)}`
-                  : p.bebas_biaya
-                  ? `Bebas Biaya · ${formatRupiah(p.tagihan)}`
-                  : `Non-Member · ${formatRupiah(p.tagihan)}`
-              }
-              right={statusBadge(p.status_main)}
-            />
+          <div
+            key={p.id}
+            className="bg-surface rounded-2xl border border-line/80 shadow-card p-4 transition-all hover:shadow-float"
+          >
+            {/* Header info peserta */}
+            <div
+              onClick={() => openRincianSheet(p)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openRincianSheet(p);
+                }
+              }}
+              className="group flex items-center gap-3.5 cursor-pointer"
+            >
+              <Avatar name={p.nama} size="md" />
+              <div className="flex-1 min-w-0">
+                <p className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors truncate text-[15px]">
+                  {p.nama}
+                </p>
+                <p className="text-caption text-ink-600 mt-0.5 truncate">
+                  {p.is_member
+                    ? `Member · ${formatRupiah(p.tagihan)}`
+                    : p.bebas_biaya
+                    ? `Bebas Biaya · ${formatRupiah(p.tagihan)}`
+                    : `Non-Member · ${formatRupiah(p.tagihan)}`}
+                </p>
+              </div>
+              <div className="shrink-0">{statusBadge(p.status_main)}</div>
+            </div>
+
             {/* Action buttons */}
-            <div className="px-4 pb-3 flex items-center gap-2">
-              {p.status_main === 'bermain' && !terkunci && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className={`flex-1 ${
-                    p.has_active_draft_session
-                      ? 'opacity-50 cursor-not-allowed'
-                      : ''
-                  }`}
-                  loading={selesaiLoadingId === p.id}
-                  disabled={p.has_active_draft_session}
-                  onClick={() => handleSelesaiMain(p)}
-                  title={
-                    p.has_active_draft_session
-                      ? `Pemain masih aktif bermain di Lapangan ${p.active_draft_lapangan}. Masukkan bola pada sesi untuk menyelesaikan.`
-                      : 'Selesaikan sesi bermain'
-                  }
-                >
-                  {p.has_active_draft_session
-                    ? `Main (Lap. ${p.active_draft_lapangan})`
-                    : 'Selesai Main'}
-                </Button>
-              )}
-
-              {p.status_main === 'selesai' && !terkunci && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={() => openRincianSheet(p)}
-                >
-                  Bayar Tagihan
-                </Button>
-              )}
-
-              {p.status_main === 'lunas' && !terkunci && (
-                <div className="flex gap-2 flex-1">
+            {!terkunci && (
+              <div className="mt-3.5 pt-3 border-t border-line/60 flex items-center gap-2">
+                {p.status_main === 'bermain' && (
                   <Button
                     size="sm"
                     variant="tonal"
+                    className={`flex-1 ${
+                      p.has_active_draft_session
+                        ? 'opacity-50 cursor-not-allowed'
+                        : ''
+                    }`}
+                    loading={selesaiLoadingId === p.id}
+                    disabled={p.has_active_draft_session}
+                    onClick={() => handleSelesaiMain(p)}
+                    title={
+                      p.has_active_draft_session
+                        ? `Pemain masih aktif bermain di Lapangan ${p.active_draft_lapangan}. Masukkan bola pada sesi untuk menyelesaikan.`
+                        : 'Selesaikan sesi bermain'
+                    }
+                  >
+                    {p.has_active_draft_session
+                      ? `Main (Lap. ${p.active_draft_lapangan})`
+                      : 'Selesai Main'}
+                  </Button>
+                )}
+
+                {p.status_main === 'selesai' && (
+                  <Button
+                    size="sm"
+                    variant="primary"
                     className="flex-1"
                     onClick={() => openRincianSheet(p)}
                   >
-                    Rincian
+                    Bayar Tagihan
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => {
-                      setBukaSheet(p);
-                      setAlasanBuka('');
-                      setBukaError(null);
-                    }}
-                  >
-                    Buka Kembali
-                  </Button>
-                </div>
-              )}
-            </div>
+                )}
+
+                {p.status_main === 'lunas' && (
+                  <div className="flex gap-2 flex-1">
+                    <Button
+                      size="sm"
+                      variant="tonal"
+                      className="flex-1"
+                      onClick={() => openRincianSheet(p)}
+                    >
+                      Rincian
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setBukaSheet(p);
+                        setAlasanBuka('');
+                        setBukaError(null);
+                      }}
+                    >
+                      Buka Kembali
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>

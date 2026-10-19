@@ -416,7 +416,7 @@ function KasPageInner() {
             hint="Transaksi kas akan muncul di sini"
           />
         ) : (
-          <div className="flex flex-col gap-0 rounded-xl overflow-hidden border border-line">
+          <div className="flex flex-col gap-2.5">
             {list.map((t) => (
               <ListRow
                 key={t.id}
