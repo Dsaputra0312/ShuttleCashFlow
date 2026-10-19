@@ -1,6 +1,9 @@
 'use client';
 
 import React from 'react';
+import { Check, X, AlertTriangle, Info } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { AppIcon } from './AppIcon';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -15,40 +18,56 @@ interface ToastItemProps {
   onDismiss: (id: string) => void;
 }
 
-const typeClasses: Record<ToastType, string> = {
-  success: 'bg-success-600 text-white',
-  error: 'bg-danger-600 text-white',
-  warning: 'bg-warning-500 text-white',
-  info: 'bg-primary-600 text-white',
-};
-
-const typeIcons: Record<ToastType, string> = {
-  success: '✓',
-  error: '✕',
-  warning: '⚠',
-  info: 'ℹ',
+const typeConfig: Record<
+  ToastType,
+  { icon: LucideIcon; border: string; iconClass: string }
+> = {
+  success: {
+    icon: Check,
+    border: 'border-success',
+    iconClass: 'text-success',
+  },
+  error: {
+    icon: X,
+    border: 'border-danger',
+    iconClass: 'text-danger',
+  },
+  warning: {
+    icon: AlertTriangle,
+    border: 'border-warning',
+    iconClass: 'text-warning',
+  },
+  info: {
+    icon: Info,
+    border: 'border-primary-500',
+    iconClass: 'text-primary-700',
+  },
 };
 
 export function ToastItem({ toast, onDismiss }: ToastItemProps) {
+  const { icon, border, iconClass } = typeConfig[toast.type];
+
   return (
     <div
       role="alert"
       className={[
-        'flex items-center gap-3 rounded-xl px-4 py-3 shadow-lg',
-        'min-h-[44px] max-w-[360px] w-full',
-        typeClasses[toast.type],
+        'flex items-center gap-3 rounded-xl px-4 py-3',
+        'min-h-[44px] w-full max-w-[360px]',
+        'bg-surface border shadow-float',
+        border,
       ].join(' ')}
     >
-      <span className="shrink-0 text-lg font-bold" aria-hidden="true">
-        {typeIcons[toast.type]}
+      <span className={['shrink-0', iconClass].join(' ')} aria-hidden="true">
+        <AppIcon icon={icon} size="sm" strokeWidth={2} />
       </span>
-      <p className="flex-1 text-sm font-medium">{toast.message}</p>
+      <p className="flex-1 text-body font-medium text-ink-900">{toast.message}</p>
       <button
+        type="button"
         onClick={() => onDismiss(toast.id)}
-        className="shrink-0 text-white/80 hover:text-white focus:outline-none"
+        className="shrink-0 text-ink-400 hover:text-ink-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded"
         aria-label="Tutup notifikasi"
       >
-        ✕
+        <AppIcon icon={X} size="sm" />
       </button>
     </div>
   );
@@ -64,7 +83,7 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
   return (
     <div
       aria-live="polite"
-      className="fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 flex-col gap-2 px-4 w-full max-w-[430px]"
+      className="fixed bottom-28 left-1/2 z-50 flex w-full max-w-[430px] -translate-x-1/2 flex-col gap-2 px-4"
     >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
