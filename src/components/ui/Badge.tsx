@@ -1,6 +1,52 @@
 import React from 'react';
+import { cva } from 'class-variance-authority';
 
-type BadgeVariant = 'default' | 'success' | 'danger' | 'warning' | 'info';
+const badgeVariants = cva(
+  'inline-flex items-center rounded-full px-2.5 py-0.5 text-caption font-medium',
+  {
+    variants: {
+      variant: {
+        // Domain variants
+        member: 'bg-tint-mint text-icon-mint',
+        'non-member': 'bg-peach-100 text-ink-600',
+        'bebas-biaya': 'bg-primary-100 text-primary-700',
+        bermain: 'bg-peach-100 text-icon-orange',
+        selesai: 'bg-warning-tonal text-warning',
+        lunas: 'bg-tint-mint text-icon-mint',
+        'belum-lunas': 'bg-danger-tonal text-danger',
+        terkunci: 'bg-peach-100 text-ink-600',
+        aktif: 'bg-tint-mint text-icon-mint',
+        'non-aktif': 'bg-peach-100 text-ink-400',
+        // Generic / backward-compatible variants
+        default: 'bg-peach-100 text-ink-600',
+        success: 'bg-tint-mint text-icon-mint',
+        danger: 'bg-danger-tonal text-danger',
+        warning: 'bg-warning-tonal text-warning',
+        info: 'bg-primary-100 text-primary-700',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
+
+type BadgeVariant =
+  | 'member'
+  | 'non-member'
+  | 'bebas-biaya'
+  | 'bermain'
+  | 'selesai'
+  | 'lunas'
+  | 'belum-lunas'
+  | 'terkunci'
+  | 'aktif'
+  | 'non-aktif'
+  | 'default'
+  | 'success'
+  | 'danger'
+  | 'warning'
+  | 'info';
 
 interface BadgeProps {
   label: string;
@@ -8,25 +54,9 @@ interface BadgeProps {
   className?: string;
 }
 
-const variantClasses: Record<BadgeVariant, string> = {
-  default: 'bg-neutral-100 text-neutral-700',
-  success: 'bg-success-100 text-success-700',
-  danger: 'bg-danger-100 text-danger-700',
-  warning: 'bg-warning-100 text-warning-700',
-  info: 'bg-primary-100 text-primary-700',
-};
-
-export function Badge({ label, variant = 'default', className = '' }: BadgeProps) {
+export function Badge({ label, variant = 'default', className }: BadgeProps) {
   return (
-    <span
-      className={[
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        variantClasses[variant],
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
+    <span className={badgeVariants({ variant, className })}>
       {label}
     </span>
   );

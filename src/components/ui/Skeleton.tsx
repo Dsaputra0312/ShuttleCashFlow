@@ -8,7 +8,7 @@ interface SkeletonProps {
 export function Skeleton({ className = '' }: SkeletonProps) {
   return (
     <div
-      className={['animate-pulse rounded-md bg-neutral-200', className]
+      className={['animate-pulse rounded-md bg-peach-100', className]
         .filter(Boolean)
         .join(' ')}
       aria-hidden="true"
@@ -20,7 +20,7 @@ export function Skeleton({ className = '' }: SkeletonProps) {
 export function SkeletonCard() {
   return (
     <div
-      className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 animate-pulse"
+      className="bg-surface rounded-lg border border-line shadow-card p-4 animate-pulse"
       aria-hidden="true"
     >
       <div className="flex items-start justify-between gap-2">
