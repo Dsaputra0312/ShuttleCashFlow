@@ -15,6 +15,13 @@
       "when": 1792075327281,
       "tag": "0001_clammy_ultimatum",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792243428649,
+      "tag": "0002_needy_frightful_four",
+      "breakpoints": true
     }
   ]
 }

@@ -64,7 +64,12 @@ export async function GET(request: NextRequest) {
     const pIds = rows.map((r) => r.id);
     const iuranRows = pIds.length
       ? await dbClient
-          .select({ pemain_id: iuran.pemain_id })
+          .select({
+            id: iuran.id,
+            pemain_id: iuran.pemain_id,
+            status: iuran.status,
+            nominal: iuran.nominal,
+          })
           .from(iuran)
           .where(
             and(
@@ -76,11 +81,17 @@ export async function GET(request: NextRequest) {
           )
       : [];
 
-    const memberSet = new Set(iuranRows.map((i) => i.pemain_id));
-    const enrichedRows = rows.map((r) => ({
-      ...r,
-      is_member: memberSet.has(r.id),
-    }));
+    const iuranMap = new Map(iuranRows.map((i) => [i.pemain_id, i]));
+    const enrichedRows = rows.map((r) => {
+      const iuranData = iuranMap.get(r.id);
+      return {
+        ...r,
+        is_member: !!iuranData,
+        iuran_id: iuranData?.id ?? null,
+        iuran_status: iuranData?.status ?? null,
+        iuran_nominal: iuranData?.nominal ?? null,
+      };
+    });
 
     return paginatedResponse(enrichedRows, {
       page,

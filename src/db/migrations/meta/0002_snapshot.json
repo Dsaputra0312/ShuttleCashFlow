@@ -1,0 +1,1801 @@
+{
+  "id": "00ffff25-5589-4d88-8c82-d3c95e13fd02",
+  "prevId": "7470320c-c26d-49a9-b765-1060a156858c",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.admin": {
+      "name": "admin",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nama": {
+          "name": "nama",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aktif": {
+          "name": "aktif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "admin_grup_id_grup_id_fk": {
+          "name": "admin_grup_id_grup_id_fk",
+          "tableFrom": "admin",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.grup": {
+      "name": "grup",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nama": {
+          "name": "nama",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kode_unik": {
+          "name": "kode_unik",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "grup_kode_unik_unique": {
+          "name": "grup_kode_unik_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "kode_unik"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.grup_admin": {
+      "name": "grup_admin",
+      "schema": "",
+      "columns": {
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admin_id": {
+          "name": "admin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "peran": {
+          "name": "peran",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'member'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "grup_admin_grup_id_grup_id_fk": {
+          "name": "grup_admin_grup_id_grup_id_fk",
+          "tableFrom": "grup_admin",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "grup_admin_admin_id_admin_id_fk": {
+          "name": "grup_admin_admin_id_admin_id_fk",
+          "tableFrom": "grup_admin",
+          "tableTo": "admin",
+          "columnsFrom": [
+            "admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "grup_admin_grup_id_admin_id_pk": {
+          "name": "grup_admin_grup_id_admin_id_pk",
+          "columns": [
+            "grup_id",
+            "admin_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sesi_admin": {
+      "name": "sesi_admin",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "admin_id": {
+          "name": "admin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "kedaluwarsa_pada": {
+          "name": "kedaluwarsa_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sesi_admin_admin_id_admin_id_fk": {
+          "name": "sesi_admin_admin_id_admin_id_fk",
+          "tableFrom": "sesi_admin",
+          "tableTo": "admin",
+          "columnsFrom": [
+            "admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sesi_admin_grup_id_grup_id_fk": {
+          "name": "sesi_admin_grup_id_grup_id_fk",
+          "tableFrom": "sesi_admin",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kategori_kas": {
+      "name": "kategori_kas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nama": {
+          "name": "nama",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipe": {
+          "name": "tipe",
+          "type": "tipe_kas",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "adalah_sistem": {
+          "name": "adalah_sistem",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "aktif": {
+          "name": "aktif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "kategori_kas_grup_id_grup_id_fk": {
+          "name": "kategori_kas_grup_id_grup_id_fk",
+          "tableFrom": "kategori_kas",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.konfigurasi_grup": {
+      "name": "konfigurasi_grup",
+      "schema": "",
+      "columns": {
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "harga_bola_per_biji": {
+          "name": "harga_bola_per_biji",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 5000
+        },
+        "isi_per_tabung": {
+          "name": "isi_per_tabung",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 12
+        },
+        "biaya_lapangan_non_member": {
+          "name": "biaya_lapangan_non_member",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 10000
+        },
+        "iuran_bulanan": {
+          "name": "iuran_bulanan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 50000
+        },
+        "kelipatan_pembulatan": {
+          "name": "kelipatan_pembulatan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1000
+        },
+        "hari_main": {
+          "name": "hari_main",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[2,5]'::jsonb"
+        },
+        "biaya_sewa_default": {
+          "name": "biaya_sewa_default",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 100000
+        },
+        "stok_awal": {
+          "name": "stok_awal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "diperbarui_pada": {
+          "name": "diperbarui_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "konfigurasi_grup_grup_id_grup_id_fk": {
+          "name": "konfigurasi_grup_grup_id_grup_id_fk",
+          "tableFrom": "konfigurasi_grup",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.log_aktivitas": {
+      "name": "log_aktivitas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admin_id": {
+          "name": "admin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aksi": {
+          "name": "aksi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entitas": {
+          "name": "entitas",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entitas_id": {
+          "name": "entitas_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "detail": {
+          "name": "detail",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alasan": {
+          "name": "alasan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "log_aktivitas_grup_id_idx": {
+          "name": "log_aktivitas_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "log_aktivitas_grup_dibuat_pada_idx": {
+          "name": "log_aktivitas_grup_dibuat_pada_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "dibuat_pada",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "log_aktivitas_grup_id_grup_id_fk": {
+          "name": "log_aktivitas_grup_id_grup_id_fk",
+          "tableFrom": "log_aktivitas",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "log_aktivitas_admin_id_admin_id_fk": {
+          "name": "log_aktivitas_admin_id_admin_id_fk",
+          "tableFrom": "log_aktivitas",
+          "tableTo": "admin",
+          "columnsFrom": [
+            "admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pemain": {
+      "name": "pemain",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nama": {
+          "name": "nama",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "no_hp": {
+          "name": "no_hp",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "catatan": {
+          "name": "catatan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bebas_biaya": {
+          "name": "bebas_biaya",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "aktif": {
+          "name": "aktif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "diperbarui_pada": {
+          "name": "diperbarui_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pemain_grup_id_grup_id_fk": {
+          "name": "pemain_grup_id_grup_id_fk",
+          "tableFrom": "pemain",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pertemuan": {
+      "name": "pertemuan",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tanggal": {
+          "name": "tanggal",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "konfigurasi_snapshot": {
+          "name": "konfigurasi_snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "terkunci": {
+          "name": "terkunci",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "diperbarui_pada": {
+          "name": "diperbarui_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "pertemuan_grup_id_idx": {
+          "name": "pertemuan_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pertemuan_tanggal_idx": {
+          "name": "pertemuan_tanggal_idx",
+          "columns": [
+            {
+              "expression": "tanggal",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pertemuan_grup_tanggal_idx": {
+          "name": "pertemuan_grup_tanggal_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tanggal",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pertemuan_grup_id_grup_id_fk": {
+          "name": "pertemuan_grup_id_grup_id_fk",
+          "tableFrom": "pertemuan",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.peserta_pertemuan": {
+      "name": "peserta_pertemuan",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "pertemuan_id": {
+          "name": "pertemuan_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pemain_id": {
+          "name": "pemain_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status_main": {
+          "name": "status_main",
+          "type": "status_main",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bermain'"
+        },
+        "tagihan": {
+          "name": "tagihan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "dibayar": {
+          "name": "dibayar",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "metode_bayar": {
+          "name": "metode_bayar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "selesai_pada": {
+          "name": "selesai_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "peserta_pertemuan_grup_id_idx": {
+          "name": "peserta_pertemuan_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "peserta_pertemuan_pertemuan_id_idx": {
+          "name": "peserta_pertemuan_pertemuan_id_idx",
+          "columns": [
+            {
+              "expression": "pertemuan_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "peserta_pertemuan_pemain_id_idx": {
+          "name": "peserta_pertemuan_pemain_id_idx",
+          "columns": [
+            {
+              "expression": "pemain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "peserta_pertemuan_grup_pemain_idx": {
+          "name": "peserta_pertemuan_grup_pemain_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "pemain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "peserta_pertemuan_pertemuan_id_pertemuan_id_fk": {
+          "name": "peserta_pertemuan_pertemuan_id_pertemuan_id_fk",
+          "tableFrom": "peserta_pertemuan",
+          "tableTo": "pertemuan",
+          "columnsFrom": [
+            "pertemuan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "peserta_pertemuan_pemain_id_pemain_id_fk": {
+          "name": "peserta_pertemuan_pemain_id_pemain_id_fk",
+          "tableFrom": "peserta_pertemuan",
+          "tableTo": "pemain",
+          "columnsFrom": [
+            "pemain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "peserta_pertemuan_grup_id_grup_id_fk": {
+          "name": "peserta_pertemuan_grup_id_grup_id_fk",
+          "tableFrom": "peserta_pertemuan",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sesi": {
+      "name": "sesi",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "pertemuan_id": {
+          "name": "pertemuan_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lapangan": {
+          "name": "lapangan",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bola_terpakai": {
+          "name": "bola_terpakai",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ditanggung_oleh_pemain_id": {
+          "name": "ditanggung_oleh_pemain_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sesi_grup_id_idx": {
+          "name": "sesi_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sesi_pertemuan_id_idx": {
+          "name": "sesi_pertemuan_id_idx",
+          "columns": [
+            {
+              "expression": "pertemuan_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sesi_pertemuan_id_pertemuan_id_fk": {
+          "name": "sesi_pertemuan_id_pertemuan_id_fk",
+          "tableFrom": "sesi",
+          "tableTo": "pertemuan",
+          "columnsFrom": [
+            "pertemuan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sesi_grup_id_grup_id_fk": {
+          "name": "sesi_grup_id_grup_id_fk",
+          "tableFrom": "sesi",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sesi_ditanggung_oleh_pemain_id_pemain_id_fk": {
+          "name": "sesi_ditanggung_oleh_pemain_id_pemain_id_fk",
+          "tableFrom": "sesi",
+          "tableTo": "pemain",
+          "columnsFrom": [
+            "ditanggung_oleh_pemain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sesi_pemain": {
+      "name": "sesi_pemain",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sesi_id": {
+          "name": "sesi_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pemain_id": {
+          "name": "pemain_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "sesi_pemain_grup_id_idx": {
+          "name": "sesi_pemain_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sesi_pemain_sesi_id_idx": {
+          "name": "sesi_pemain_sesi_id_idx",
+          "columns": [
+            {
+              "expression": "sesi_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sesi_pemain_pemain_id_idx": {
+          "name": "sesi_pemain_pemain_id_idx",
+          "columns": [
+            {
+              "expression": "pemain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sesi_pemain_grup_pemain_idx": {
+          "name": "sesi_pemain_grup_pemain_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "pemain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sesi_pemain_sesi_id_sesi_id_fk": {
+          "name": "sesi_pemain_sesi_id_sesi_id_fk",
+          "tableFrom": "sesi_pemain",
+          "tableTo": "sesi",
+          "columnsFrom": [
+            "sesi_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sesi_pemain_pemain_id_pemain_id_fk": {
+          "name": "sesi_pemain_pemain_id_pemain_id_fk",
+          "tableFrom": "sesi_pemain",
+          "tableTo": "pemain",
+          "columnsFrom": [
+            "pemain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sesi_pemain_grup_id_grup_id_fk": {
+          "name": "sesi_pemain_grup_id_grup_id_fk",
+          "tableFrom": "sesi_pemain",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.iuran": {
+      "name": "iuran",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pemain_id": {
+          "name": "pemain_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "periode_tahun": {
+          "name": "periode_tahun",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "periode_bulan": {
+          "name": "periode_bulan",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nominal": {
+          "name": "nominal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'lunas'"
+        },
+        "dibayar_pada": {
+          "name": "dibayar_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "iuran_grup_id_idx": {
+          "name": "iuran_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "iuran_pemain_id_idx": {
+          "name": "iuran_pemain_id_idx",
+          "columns": [
+            {
+              "expression": "pemain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "iuran_grup_pemain_idx": {
+          "name": "iuran_grup_pemain_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "pemain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "iuran_grup_id_grup_id_fk": {
+          "name": "iuran_grup_id_grup_id_fk",
+          "tableFrom": "iuran",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "iuran_pemain_id_pemain_id_fk": {
+          "name": "iuran_pemain_id_pemain_id_fk",
+          "tableFrom": "iuran",
+          "tableTo": "pemain",
+          "columnsFrom": [
+            "pemain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "iuran_unique_per_periode": {
+          "name": "iuran_unique_per_periode",
+          "nullsNotDistinct": false,
+          "columns": [
+            "grup_id",
+            "pemain_id",
+            "periode_tahun",
+            "periode_bulan"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.koreksi_stok": {
+      "name": "koreksi_stok",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jumlah": {
+          "name": "jumlah",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alasan": {
+          "name": "alasan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dibuat_oleh_admin_id": {
+          "name": "dibuat_oleh_admin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "koreksi_stok_grup_id_idx": {
+          "name": "koreksi_stok_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "koreksi_stok_grup_id_grup_id_fk": {
+          "name": "koreksi_stok_grup_id_grup_id_fk",
+          "tableFrom": "koreksi_stok",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "koreksi_stok_dibuat_oleh_admin_id_admin_id_fk": {
+          "name": "koreksi_stok_dibuat_oleh_admin_id_admin_id_fk",
+          "tableFrom": "koreksi_stok",
+          "tableTo": "admin",
+          "columnsFrom": [
+            "dibuat_oleh_admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pembelian_bola": {
+      "name": "pembelian_bola",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jumlah_tabung": {
+          "name": "jumlah_tabung",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "isi_per_tabung": {
+          "name": "isi_per_tabung",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "harga_total": {
+          "name": "harga_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transaksi_kas_id": {
+          "name": "transaksi_kas_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "pembelian_bola_grup_id_idx": {
+          "name": "pembelian_bola_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pembelian_bola_grup_id_grup_id_fk": {
+          "name": "pembelian_bola_grup_id_grup_id_fk",
+          "tableFrom": "pembelian_bola",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pembelian_bola_transaksi_kas_id_transaksi_kas_id_fk": {
+          "name": "pembelian_bola_transaksi_kas_id_transaksi_kas_id_fk",
+          "tableFrom": "pembelian_bola",
+          "tableTo": "transaksi_kas",
+          "columnsFrom": [
+            "transaksi_kas_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transaksi_kas": {
+      "name": "transaksi_kas",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "grup_id": {
+          "name": "grup_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kategori_id": {
+          "name": "kategori_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nominal": {
+          "name": "nominal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipe": {
+          "name": "tipe",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "keterangan": {
+          "name": "keterangan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "referensi_tipe": {
+          "name": "referensi_tipe",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "referensi_id": {
+          "name": "referensi_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pertemuan_id": {
+          "name": "pertemuan_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dapat_diubah": {
+          "name": "dapat_diubah",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "dibuat_oleh_admin_id": {
+          "name": "dibuat_oleh_admin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "transaksi_kas_grup_id_idx": {
+          "name": "transaksi_kas_grup_id_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "transaksi_kas_pertemuan_id_idx": {
+          "name": "transaksi_kas_pertemuan_id_idx",
+          "columns": [
+            {
+              "expression": "pertemuan_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "transaksi_kas_grup_dibuat_pada_idx": {
+          "name": "transaksi_kas_grup_dibuat_pada_idx",
+          "columns": [
+            {
+              "expression": "grup_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "dibuat_pada",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transaksi_kas_grup_id_grup_id_fk": {
+          "name": "transaksi_kas_grup_id_grup_id_fk",
+          "tableFrom": "transaksi_kas",
+          "tableTo": "grup",
+          "columnsFrom": [
+            "grup_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "transaksi_kas_kategori_id_kategori_kas_id_fk": {
+          "name": "transaksi_kas_kategori_id_kategori_kas_id_fk",
+          "tableFrom": "transaksi_kas",
+          "tableTo": "kategori_kas",
+          "columnsFrom": [
+            "kategori_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "transaksi_kas_pertemuan_id_pertemuan_id_fk": {
+          "name": "transaksi_kas_pertemuan_id_pertemuan_id_fk",
+          "tableFrom": "transaksi_kas",
+          "tableTo": "pertemuan",
+          "columnsFrom": [
+            "pertemuan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "transaksi_kas_dibuat_oleh_admin_id_admin_id_fk": {
+          "name": "transaksi_kas_dibuat_oleh_admin_id_admin_id_fk",
+          "tableFrom": "transaksi_kas",
+          "tableTo": "admin",
+          "columnsFrom": [
+            "dibuat_oleh_admin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.tipe_kas": {
+      "name": "tipe_kas",
+      "schema": "public",
+      "values": [
+        "pemasukan",
+        "pengeluaran"
+      ]
+    },
+    "public.status_main": {
+      "name": "status_main",
+      "schema": "public",
+      "values": [
+        "bermain",
+        "selesai",
+        "lunas"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

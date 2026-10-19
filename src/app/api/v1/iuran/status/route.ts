@@ -33,7 +33,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const rows = await db()
-      .select({ id: iuran.id, nominal: iuran.nominal })
+      .select({
+        id: iuran.id,
+        nominal: iuran.nominal,
+        status: iuran.status,
+        dibayar_pada: iuran.dibayar_pada,
+      })
       .from(iuran)
       .where(
         and(
@@ -52,6 +57,7 @@ export async function GET(request: NextRequest) {
       periode_tahun: currentYear,
       periode_bulan: currentMonth,
       is_member,
+      status: rows[0]?.status ?? null,
       iuran: rows[0] ?? null,
     });
   } catch (err) {

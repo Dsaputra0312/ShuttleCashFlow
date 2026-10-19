@@ -28,6 +28,8 @@ interface IuranRow {
   periode_tahun: number;
   periode_bulan: number;
   nominal: number;
+  status: 'lunas' | 'bayar_nanti' | 'gratis';
+  dibayar_pada?: string | null;
   dibuat_pada: string;
 }
 
@@ -53,6 +55,7 @@ function PemainDetailPageInner() {
   const [pemain, setPemain] = useState<Pemain | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMemberThisMonth, setIsMemberThisMonth] = useState(false);
+  const [memberStatusThisMonth, setMemberStatusThisMonth] = useState<'lunas' | 'bayar_nanti' | 'gratis' | null>(null);
 
   // Iuran list
   const [iuranList, setIuranList] = useState<IuranRow[]>([]);
@@ -66,10 +69,11 @@ function PemainDetailPageInner() {
   const [iuranOpen, setIuranOpen] = useState(false);
   const [iuranTahun, setIuranTahun] = useState(2026);
   const [iuranBulan, setIuranBulan] = useState(1);
-  const [iuranNominal, setIuranNominal] = useState('');
+  const [iuranNominal, setIuranNominal] = useState('50000');
+  const [iuranStatusMode, setIuranStatusMode] = useState<'lunas' | 'bayar_nanti' | 'gratis'>('lunas');
   const [iuranLoading, setIuranLoading] = useState(false);
   const [iuranError, setIuranError] = useState<string | null>(null);
-
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const fetchPemain = useCallback(async () => {
     try {
@@ -93,6 +97,7 @@ function PemainDetailPageInner() {
       const json = await res.json();
       if (res.ok) {
         setIsMemberThisMonth(json.data.is_member as boolean);
+        setMemberStatusThisMonth(json.data.status ?? (json.data.is_member ? 'lunas' : null));
       }
     } catch {
       // ignore
@@ -144,7 +149,7 @@ function PemainDetailPageInner() {
 
   const handleCatatIuran = async () => {
     const nominal = parseInt(iuranNominal, 10);
-    if (isNaN(nominal) || nominal <= 0) {
+    if (iuranStatusMode !== 'gratis' && (isNaN(nominal) || nominal <= 0)) {
       setIuranError('Nominal harus lebih dari 0');
       return;
     }
@@ -158,14 +163,15 @@ function PemainDetailPageInner() {
           pemain_id: pemainId,
           periode_tahun: iuranTahun,
           periode_bulan: iuranBulan,
-          nominal,
+          nominal: iuranStatusMode === 'gratis' ? 0 : nominal,
+          status: iuranStatusMode,
         }),
       });
       const json = await res.json();
       if (res.ok) {
-        addToast('Iuran berhasil dicatat', 'success');
+        addToast(json.message ?? 'Membership berhasil dicatat', 'success');
         setIuranOpen(false);
-        setIuranNominal('');
+        setIuranNominal('50000');
         fetchIuran(1);
         fetchMemberStatus();
       } else {
@@ -175,6 +181,28 @@ function PemainDetailPageInner() {
       setIuranError('Terjadi kesalahan jaringan');
     } finally {
       setIuranLoading(false);
+    }
+  };
+
+  const handleLunasiIuran = async (iuranId: string) => {
+    setActionLoadingId(iuranId);
+    try {
+      const res = await fetch(`/api/v1/iuran/${iuranId}/bayar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const json = await res.json();
+      if (res.ok) {
+        addToast('Iuran berhasil dilunasi & dicatat ke kas', 'success');
+        fetchIuran(iuranPage);
+        fetchMemberStatus();
+      } else {
+        addToast(json.message ?? 'Gagal melunasi iuran', 'error');
+      }
+    } catch {
+      addToast('Terjadi kesalahan jaringan', 'error');
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -224,10 +252,17 @@ function PemainDetailPageInner() {
           </div>
           <div className="flex flex-col gap-1 items-end">
             {pemain.bebas_biaya && <Badge label="Bebas Biaya" variant="info" />}
-            <Badge
-              label={isMemberThisMonth ? 'Member' : 'Non-Member'}
-              variant={isMemberThisMonth ? 'success' : 'default'}
-            />
+            {isMemberThisMonth ? (
+              memberStatusThisMonth === 'bayar_nanti' ? (
+                <Badge label="Member (Bayar Nanti)" variant="warning" />
+              ) : memberStatusThisMonth === 'gratis' ? (
+                <Badge label="Member (Gratis)" variant="info" />
+              ) : (
+                <Badge label="Member" variant="success" />
+              )
+            ) : (
+              <Badge label="Non-Member" variant="default" />
+            )}
           </div>
         </div>
         <Button
@@ -249,6 +284,7 @@ function PemainDetailPageInner() {
             const currentDate = new Date();
             setIuranTahun(currentDate.getFullYear());
             setIuranBulan(currentDate.getMonth() + 1);
+            setIuranStatusMode('lunas');
             setIuranError(null);
             try {
               const confRes = await fetch('/api/v1/konfigurasi');
@@ -279,19 +315,50 @@ function PemainDetailPageInner() {
         {iuranList.map((i) => (
           <div
             key={i.id}
-            className="flex items-center justify-between bg-white rounded-xl border border-neutral-200 shadow-sm p-3"
+            className="flex items-center justify-between bg-white rounded-xl border border-neutral-200/90 shadow-sm p-3.5"
           >
-            <div>
-              <p className="font-medium text-sm text-neutral-900">
-                {BULAN[i.periode_bulan - 1]} {i.periode_tahun}
-              </p>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                {new Date(i.dibuat_pada).toLocaleDateString('id-ID')}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold text-sm text-neutral-900">
+                  {BULAN[i.periode_bulan - 1]} {i.periode_tahun}
+                </p>
+                {i.status === 'bayar_nanti' ? (
+                  <Badge label="Bayar Nanti" variant="warning" />
+                ) : i.status === 'gratis' ? (
+                  <Badge label="Gratis" variant="info" />
+                ) : (
+                  <Badge label="Lunas" variant="success" />
+                )}
+              </div>
+              <p className="text-xs text-neutral-500 mt-1">
+                {i.status === 'lunas' && i.dibayar_pada
+                  ? `Dibayar: ${new Date(i.dibayar_pada).toLocaleDateString('id-ID')}`
+                  : `Dicatat: ${new Date(i.dibuat_pada).toLocaleDateString('id-ID')}`}
               </p>
             </div>
-            <p className="font-semibold text-sm text-success-700">
-              {formatRupiah(i.nominal)}
-            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <p
+                className={`font-bold text-sm ${
+                  i.status === 'gratis'
+                    ? 'text-purple-700'
+                    : i.status === 'bayar_nanti'
+                    ? 'text-amber-700'
+                    : 'text-emerald-700'
+                }`}
+              >
+                {i.status === 'gratis' ? 'Gratis (Rp 0)' : formatRupiah(i.nominal)}
+              </p>
+              {i.status === 'bayar_nanti' && (
+                <button
+                  type="button"
+                  onClick={() => handleLunasiIuran(i.id)}
+                  disabled={actionLoadingId === i.id}
+                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-colors disabled:opacity-50"
+                >
+                  {actionLoadingId === i.id ? '...' : '💰 Lunasi'}
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -336,9 +403,51 @@ function PemainDetailPageInner() {
       <BottomSheet
         open={iuranOpen}
         onClose={() => setIuranOpen(false)}
-        title="Catat Iuran"
+        title="Catat Iuran / Membership"
       >
         <div className="flex flex-col gap-4">
+          {/* Pilihan Mode */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+              Pilihan Status Membership
+            </label>
+            <div className="grid grid-cols-3 gap-1.5 bg-neutral-100 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setIuranStatusMode('lunas')}
+                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center ${
+                  iuranStatusMode === 'lunas'
+                    ? 'bg-white text-emerald-700 shadow-sm'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                }`}
+              >
+                💳 Lunas
+              </button>
+              <button
+                type="button"
+                onClick={() => setIuranStatusMode('bayar_nanti')}
+                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center ${
+                  iuranStatusMode === 'bayar_nanti'
+                    ? 'bg-white text-amber-700 shadow-sm'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                }`}
+              >
+                ⏳ Bayar Nanti
+              </button>
+              <button
+                type="button"
+                onClick={() => setIuranStatusMode('gratis')}
+                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center ${
+                  iuranStatusMode === 'gratis'
+                    ? 'bg-white text-purple-700 shadow-sm'
+                    : 'text-neutral-600 hover:text-neutral-900'
+                }`}
+              >
+                🎁 Tanpa Bayar
+              </button>
+            </div>
+          </div>
+
           <div className="flex gap-3">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-sm font-medium text-neutral-700">Tahun</label>
@@ -367,14 +476,16 @@ function PemainDetailPageInner() {
             </div>
           </div>
 
-          <Input
-            label="Nominal"
-            type="number"
-            value={iuranNominal}
-            onChange={(e) => setIuranNominal(e.target.value)}
-            min={1}
-            placeholder="50000"
-          />
+          {iuranStatusMode !== 'gratis' && (
+            <Input
+              label={iuranStatusMode === 'bayar_nanti' ? 'Nominal Tagihan Iuran (Rp)' : 'Nominal Iuran (Rp)'}
+              type="number"
+              value={iuranNominal}
+              onChange={(e) => setIuranNominal(e.target.value)}
+              min={1}
+              placeholder="50000"
+            />
+          )}
 
           {iuranError && (
             <p className="text-sm text-danger-600" role="alert">
@@ -391,7 +502,11 @@ function PemainDetailPageInner() {
               Batal
             </Button>
             <Button onClick={handleCatatIuran} loading={iuranLoading} className="flex-1">
-              Simpan
+              {iuranStatusMode === 'lunas'
+                ? 'Simpan & Masuk Kas'
+                : iuranStatusMode === 'bayar_nanti'
+                ? 'Simpan (Bayar Nanti)'
+                : 'Jadikan Member Gratis'}
             </Button>
           </div>
         </div>
