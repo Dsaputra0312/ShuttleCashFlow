@@ -2,13 +2,30 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
+import {
+  Settings2,
+  ShieldCheck,
+  Tags,
+  History,
+  Key,
+  Wallet,
+  ChevronRight,
+  LogOut,
+} from 'lucide-react';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Card } from '@/components/ui/Card';
+import { ListRow } from '@/components/ui/ListRow';
+import { IconTile } from '@/components/ui/IconTile';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { ShuttlecockIcon } from '@/components/ui/ShuttlecockIcon';
 
 interface MenuItem {
   href: string;
   label: string;
   description: string;
-  icon: string;
+  icon: LucideIcon | React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+  tint: 'orange' | 'lavender' | 'mint' | 'peach';
 }
 
 const menuItems: MenuItem[] = [
@@ -16,43 +33,50 @@ const menuItems: MenuItem[] = [
     href: '/lainnya/konfigurasi',
     label: 'Konfigurasi',
     description: 'Atur harga bola, iuran, dan biaya lapangan',
-    icon: '⚙️',
+    icon: Settings2,
+    tint: 'lavender',
   },
   {
     href: '/lainnya/admin',
     label: 'Admin',
     description: 'Kelola akun admin grup',
-    icon: '👥',
+    icon: ShieldCheck,
+    tint: 'mint',
   },
   {
     href: '/lainnya/kategori-kas',
     label: 'Kategori Kas',
     description: 'Atur kategori pemasukan dan pengeluaran',
-    icon: '🗂️',
+    icon: Tags,
+    tint: 'orange',
   },
   {
     href: '/lainnya/log',
     label: 'Log Aktivitas',
     description: 'Riwayat perubahan data oleh admin',
-    icon: '📋',
+    icon: History,
+    tint: 'peach',
   },
   {
     href: '/lainnya/ubah-kata-sandi',
     label: 'Ubah Kata Sandi',
     description: 'Ganti password akun Anda',
-    icon: '🔑',
+    icon: Key,
+    tint: 'peach',
   },
   {
     href: '/lainnya/stok',
     label: 'Stok Bola',
     description: 'Kelola stok dan pembelian bola',
-    icon: '🏸',
+    icon: ShuttlecockIcon,
+    tint: 'orange',
   },
   {
     href: '/kas?penyesuaian=true',
     label: 'Penyesuaian Kas',
     description: 'Sesuaikan saldo fisik kas (opname / koreksi)',
-    icon: '💰',
+    icon: Wallet,
+    tint: 'mint',
   },
 ];
 
@@ -70,46 +94,39 @@ export default function LainnyaPage() {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold text-neutral-900 mb-4">Lainnya</h1>
+    <div>
+      <PageHeader title="Lainnya" />
 
-      <nav aria-label="Menu lainnya">
-        <ul className="flex flex-col gap-3">
-          {menuItems.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="flex items-center gap-4 bg-white rounded-xl border border-neutral-200 shadow-sm p-4 min-h-[44px] active:bg-neutral-50"
-              >
-                <span className="text-2xl" aria-hidden="true">{item.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-neutral-900">{item.label}</p>
-                  <p className="text-sm text-neutral-500 mt-0.5">{item.description}</p>
-                </div>
-                <span className="text-neutral-400 text-lg" aria-hidden="true">›</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <div className="p-4 flex flex-col gap-6">
+        <nav aria-label="Menu lainnya">
+          <Card padding={false} className="overflow-hidden flex flex-col">
+            {menuItems.map((item) => (
+              <ListRow
+                key={item.href}
+                left={<IconTile tint={item.tint} icon={item.icon} />}
+                title={item.label}
+                subtitle={item.description}
+                right={<AppIcon icon={ChevronRight} size="sm" className="text-ink-400" />}
+                onPress={() => router.push(item.href)}
+              />
+            ))}
+          </Card>
+        </nav>
 
-      {/* Logout */}
-      <div className="mt-6">
-        <button
-          type="button"
-          id="btn-logout"
-          onClick={handleLogout}
-          disabled={loggingOut}
-          className="flex items-center gap-4 w-full bg-white rounded-xl border border-danger-200 shadow-sm p-4 min-h-[44px] active:bg-danger-50 disabled:opacity-60 text-left"
-        >
-          <span className="text-2xl" aria-hidden="true">🚪</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-danger-600">
-              {loggingOut ? 'Keluar...' : 'Keluar'}
-            </p>
-            <p className="text-sm text-neutral-500 mt-0.5">Logout dari akun Anda</p>
-          </div>
-        </button>
+        {/* Logout */}
+        <div>
+          <Card padding={false} className="overflow-hidden">
+            <ListRow
+              id="btn-logout"
+              left={<IconTile tint="peach" icon={LogOut} />}
+              title={loggingOut ? 'Keluar...' : 'Keluar'}
+              subtitle="Logout dari akun Anda"
+              right={<AppIcon icon={ChevronRight} size="sm" className="text-ink-400" />}
+              onPress={loggingOut ? undefined : handleLogout}
+              destructive
+            />
+          </Card>
+        </div>
       </div>
     </div>
   );

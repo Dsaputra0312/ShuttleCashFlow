@@ -1,8 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Info } from 'lucide-react';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Card } from '@/components/ui/Card';
+import { TintCard } from '@/components/ui/TintCard';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Button } from '@/components/ui/Button';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
 
@@ -25,6 +32,7 @@ const DEFAULT: KonfigurasiData = {
 };
 
 export default function KonfigurasiPage() {
+  const router = useRouter();
   const { toasts, addToast, dismiss } = useToast();
   const [form, setForm] = useState<KonfigurasiData>(DEFAULT);
   const [loading, setLoading] = useState(false);
@@ -56,7 +64,12 @@ export default function KonfigurasiPage() {
     load();
   }, []);
 
-  const handleChange = (key: keyof KonfigurasiData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCurrencyChange = (key: keyof KonfigurasiData) => (val: number) => {
+    setForm((prev) => ({ ...prev, [key]: val }));
+    setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  const handleNumberChange = (key: keyof KonfigurasiData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
     setForm((prev) => ({ ...prev, [key]: isNaN(val) ? 0 : val }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
@@ -94,51 +107,87 @@ export default function KonfigurasiPage() {
     }
   };
 
-  const fields: { key: keyof KonfigurasiData; label: string; hint?: string }[] = [
-    { key: 'harga_bola_per_biji', label: 'Harga Bola per Biji (Rp)' },
-    { key: 'isi_per_tabung', label: 'Isi per Tabung (biji)' },
-    { key: 'biaya_lapangan_non_member', label: 'Biaya Lapangan Non-Member (Rp)' },
-    { key: 'iuran_bulanan', label: 'Iuran Bulanan (Rp)' },
-    { key: 'kelipatan_pembulatan', label: 'Kelipatan Pembulatan (Rp)' },
-    { key: 'biaya_sewa_default', label: 'Biaya Sewa Default (Rp)' },
-  ];
-
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold text-neutral-900 mb-4">Konfigurasi</h1>
+    <div>
+      <PageHeader
+        title="Konfigurasi"
+        onBack={() => router.push('/lainnya')}
+      />
 
-      <div className="bg-primary-50 border border-primary-200 rounded-xl p-3.5 mb-4 text-xs text-primary-900">
-        <p className="font-semibold mb-0.5">🏸 Pengelolaan Stok Bola</p>
-        <p className="text-primary-700 leading-relaxed">
-          Pencatatan sisa fisik bola awal, pembelian tabung, dan koreksi stok kini dikelola langsung di menu{' '}
-          <span className="font-semibold underline">Lainnya &gt; Stok Bola</span>.
-        </p>
+      <div className="p-4 max-w-xl mx-auto">
+        <TintCard variant="lavender" className="p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 shrink-0 text-icon-lavender">
+              <AppIcon icon={Info} size="sm" />
+            </div>
+            <div className="text-caption text-ink-900">
+              <p className="font-semibold mb-1">Pengelolaan Stok Bola</p>
+              <p className="text-ink-600 leading-relaxed">
+                Pencatatan sisa fisik bola awal, pembelian tabung, dan koreksi stok kini dikelola langsung di menu{' '}
+                <span className="font-semibold underline">Lainnya &gt; Stok Bola</span>.
+              </p>
+            </div>
+          </div>
+        </TintCard>
+
+        {fetching ? (
+          <p className="text-caption text-ink-400 text-center py-4">Memuat...</p>
+        ) : (
+          <Card padding>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <CurrencyInput
+                label="Harga Bola per Biji"
+                value={form.harga_bola_per_biji}
+                onChange={handleCurrencyChange('harga_bola_per_biji')}
+                error={errors.harga_bola_per_biji}
+              />
+
+              <Input
+                label="Isi per Tabung (biji)"
+                type="number"
+                min={0}
+                value={form.isi_per_tabung}
+                onChange={handleNumberChange('isi_per_tabung')}
+                error={errors.isi_per_tabung}
+              />
+
+              <CurrencyInput
+                label="Biaya Lapangan Non-Member"
+                value={form.biaya_lapangan_non_member}
+                onChange={handleCurrencyChange('biaya_lapangan_non_member')}
+                error={errors.biaya_lapangan_non_member}
+              />
+
+              <CurrencyInput
+                label="Iuran Bulanan"
+                value={form.iuran_bulanan}
+                onChange={handleCurrencyChange('iuran_bulanan')}
+                error={errors.iuran_bulanan}
+              />
+
+              <CurrencyInput
+                label="Kelipatan Pembulatan"
+                value={form.kelipatan_pembulatan}
+                onChange={handleCurrencyChange('kelipatan_pembulatan')}
+                error={errors.kelipatan_pembulatan}
+              />
+
+              <CurrencyInput
+                label="Biaya Sewa Default"
+                value={form.biaya_sewa_default}
+                onChange={handleCurrencyChange('biaya_sewa_default')}
+                error={errors.biaya_sewa_default}
+              />
+
+              <Button type="submit" loading={loading} className="w-full mt-2">
+                Simpan Konfigurasi
+              </Button>
+            </form>
+          </Card>
+        )}
+
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
       </div>
-
-      {fetching ? (
-        <p className="text-neutral-500">Memuat...</p>
-      ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {fields.map(({ key, label, hint }) => (
-            <Input
-              key={key}
-              label={label}
-              hint={hint}
-              type="number"
-              min={0}
-              value={form[key]}
-              onChange={handleChange(key)}
-              error={errors[key]}
-            />
-          ))}
-
-          <Button type="submit" loading={loading} className="w-full mt-2">
-            Simpan Konfigurasi
-          </Button>
-        </form>
-      )}
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }

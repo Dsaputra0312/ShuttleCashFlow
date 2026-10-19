@@ -1,9 +1,20 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { CalendarPlus, Wallet, CalendarDays, Users, ShoppingBag } from 'lucide-react';
 import { formatRupiah } from '@/lib/money';
-import { formatStokBola } from '@/lib/stock';
+import { HeroCard } from '@/components/ui/HeroCard';
+import { SelectorCard } from '@/components/ui/SelectorCard';
+import { QuickActions } from '@/components/ui/QuickActions';
+import { FeatureCard } from '@/components/ui/FeatureCard';
+import { Section } from '@/components/ui/Section';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { Timeline } from '@/components/ui/Timeline';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { Tabs } from '@/components/ui/Tabs';
+import { Badge } from '@/components/ui/Badge';
+import { ShuttlecockIcon } from '@/components/ui/ShuttlecockIcon';
 
 type Filter = 'harian' | 'bulanan';
 
@@ -33,15 +44,6 @@ interface DashboardData {
   tanggal: string;
   transaksi_terbaru: TransaksiItem[];
   ringkasan_pertemuan_terakhir: RingkasanPertemuan | null;
-}
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 animate-pulse">
-      <div className="h-3 bg-neutral-200 rounded w-24 mb-2" />
-      <div className="h-7 bg-neutral-200 rounded w-32" />
-    </div>
-  );
 }
 
 function formatTanggalPendek(dateStr: string): string {
@@ -76,6 +78,7 @@ function getCurrentMonthWIB(): string {
 }
 
 export default function BerandaPage() {
+  const router = useRouter();
   const [filter, setFilter] = useState<Filter>('harian');
   const [tanggal, setTanggal] = useState<string>('');
   const [bulan, setBulan] = useState<string>('');
@@ -125,181 +128,181 @@ export default function BerandaPage() {
     };
   }, [filter, tanggal, bulan, fetchDashboard]);
 
+  const pertemuanTerakhir = data?.ringkasan_pertemuan_terakhir;
+
+  const quickActions = [
+    {
+      icon: CalendarPlus,
+      tint: 'orange' as const,
+      label: 'Buat Pertemuan',
+      onClick: () => router.push('/pertemuan'),
+    },
+    {
+      icon: Wallet,
+      tint: 'mint' as const,
+      label: 'Catat Kas',
+      onClick: () => router.push('/kas'),
+    },
+    {
+      icon: <ShuttlecockIcon size={20} />,
+      tint: 'peach' as const,
+      label: 'Lihat Stok',
+      onClick: () => router.push('/lainnya/stok'),
+    },
+  ];
+
+  const featureItems: Parameters<typeof FeatureCard>[0]['items'] = [
+    {
+      tint: 'orange',
+      icon: CalendarDays,
+      label: 'Pertemuan',
+      description: 'Kelola sesi main',
+      href: '/pertemuan',
+    },
+    {
+      tint: 'lavender',
+      icon: Users,
+      label: 'Pemain',
+      description: 'Data anggota grup',
+      href: '/pemain',
+    },
+    {
+      tint: 'mint',
+      icon: Wallet,
+      label: 'Kas',
+      description: 'Pemasukan & pengeluaran',
+      href: '/kas',
+    },
+    {
+      tint: 'peach',
+      icon: ShoppingBag,
+      label: 'Stok Bola',
+      description: 'Kelola shuttlecock',
+      href: '/lainnya/stok',
+    },
+  ];
+
+  const filterPeriodeLabel =
+    filter === 'harian' && tanggal
+      ? formatTanggalPendek(tanggal)
+      : bulan ?? '';
+
+  // Build timeline items from transaksi_terbaru
+  const timelineItems = (data?.transaksi_terbaru ?? []).map((t) => ({
+    content: (
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-body text-ink-900 truncate">{t.keterangan || '—'}</span>
+        <span
+          className={[
+            'text-caption font-medium shrink-0 nums',
+            t.tipe === 'pemasukan' ? 'text-icon-mint' : 'text-danger',
+          ].join(' ')}
+        >
+          {t.tipe === 'pemasukan' ? '+' : '-'}{formatRupiah(t.nominal)}
+        </span>
+      </div>
+    ),
+    time: formatWaktu(t.dibuat_pada),
+  }));
+
   return (
-    <div className="p-4 pb-24">
-      {/* Header */}
-      <h1 className="text-xl font-bold text-neutral-900 mb-4">Beranda</h1>
+    <div>
+      {/* Selector Card — grup info */}
+      <Section>
+        <SelectorCard
+          name="ShuttleCashFlow"
+          subtitle={
+            pertemuanTerakhir
+              ? `Pertemuan terakhir: ${formatTanggalPendek(pertemuanTerakhir.tanggal)}`
+              : 'Belum ada pertemuan'
+          }
+          badge={
+            pertemuanTerakhir ? (
+              <Badge
+                label={pertemuanTerakhir.terkunci ? 'Terkunci' : 'Aktif'}
+                variant={pertemuanTerakhir.terkunci ? 'terkunci' : 'aktif'}
+              />
+            ) : undefined
+          }
+          onClick={
+            pertemuanTerakhir
+              ? () => router.push(`/pertemuan/${pertemuanTerakhir.id}`)
+              : undefined
+          }
+        />
+      </Section>
 
       {/* Filter toggle + date picker */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex bg-neutral-100 rounded-lg p-1">
-          {(['harian', 'bulanan'] as Filter[]).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={[
-                'px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize',
-                filter === f
-                  ? 'bg-white text-neutral-900 shadow-sm'
-                  : 'text-neutral-500',
-              ].join(' ')}
-            >
-              {f === 'harian' ? 'Harian' : 'Bulanan'}
-            </button>
-          ))}
-        </div>
-
-        {filter === 'harian' ? (
-          <input
-            type="date"
-            value={tanggal}
-            onChange={(e) => setTanggal(e.target.value)}
-            className="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+      <Section className="pt-0">
+        <div className="flex items-center gap-3">
+          <Tabs
+            tabs={[
+              { key: 'harian', label: 'Harian' },
+              { key: 'bulanan', label: 'Bulanan' },
+            ]}
+            active={filter}
+            onChange={(k) => setFilter(k as Filter)}
+            variant="pill"
+            className="flex-1"
           />
-        ) : (
-          <input
-            type="month"
-            value={bulan}
-            onChange={(e) => setBulan(e.target.value)}
-            className="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-        )}
-      </div>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        {loading ? (
-          <>
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </>
-        ) : (
-          <>
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
-              <p className="text-xs text-neutral-500 mb-1">Saldo Kas</p>
-              <p className={`text-lg font-bold ${(data?.saldo_kas ?? 0) < 0 ? 'text-danger-700' : 'text-primary-700'}`}>
-                {formatRupiah(data?.saldo_kas ?? 0)}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
-              <p className="text-xs text-neutral-500 mb-1">Stok Bola</p>
-              <p className="text-base font-bold text-neutral-900 leading-tight">
-                {data?.stok_bola_formatted ?? formatStokBola(data?.stok_bola ?? 0)}
-              </p>
-              <p className="text-[11px] text-neutral-500 mt-0.5">
-                Total {data?.stok_bola ?? 0} biji
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
-              <p className="text-xs text-neutral-500 mb-1">
-                Pemasukan{' '}
-                <span className="text-neutral-400">
-                  ({filter === 'harian' ? formatTanggalPendek(tanggal) : bulan})
-                </span>
-              </p>
-              <p className="text-lg font-bold text-success-700">
-                {formatRupiah(data?.total_pemasukan ?? 0)}
-              </p>
-            </div>
-
-            <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4">
-              <p className="text-xs text-neutral-500 mb-1">
-                Pengeluaran{' '}
-                <span className="text-neutral-400">
-                  ({filter === 'harian' ? formatTanggalPendek(tanggal) : bulan})
-                </span>
-              </p>
-              <p className="text-lg font-bold text-danger-700">
-                {formatRupiah(data?.total_pengeluaran ?? 0)}
-              </p>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Transaksi Terbaru */}
-      <h2 className="font-semibold text-neutral-900 mb-3">Transaksi Terbaru</h2>
-      {loading ? (
-        <div className="flex flex-col gap-2 mb-5">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-xl border border-neutral-200 p-3 animate-pulse">
-              <div className="h-3 bg-neutral-200 rounded w-40 mb-2" />
-              <div className="h-3 bg-neutral-200 rounded w-24" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2 mb-5">
-          {(data?.transaksi_terbaru ?? []).length === 0 ? (
-            <p className="text-sm text-neutral-500 text-center py-4">Belum ada transaksi</p>
+          {filter === 'harian' ? (
+            <input
+              type="date"
+              value={tanggal}
+              onChange={(e) => setTanggal(e.target.value)}
+              aria-label="Pilih tanggal"
+              className="flex-1 h-10 rounded-lg border border-line bg-surface px-3 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
+            />
           ) : (
-            (data?.transaksi_terbaru ?? []).map((t) => (
-              <div
-                key={t.id}
-                className="bg-white rounded-xl border border-neutral-200 shadow-sm p-3 flex items-start justify-between gap-2"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-neutral-700 truncate">{t.keterangan || '—'}</p>
-                  <p className="text-xs text-neutral-400 mt-0.5">{formatWaktu(t.dibuat_pada)}</p>
-                </div>
-                <p
-                  className={`text-sm font-semibold shrink-0 ${
-                    t.tipe === 'pemasukan' ? 'text-success-700' : 'text-danger-700'
-                  }`}
-                >
-                  {t.tipe === 'pemasukan' ? '+' : '-'}{formatRupiah(t.nominal)}
-                </p>
-              </div>
-            ))
+            <input
+              type="month"
+              value={bulan}
+              onChange={(e) => setBulan(e.target.value)}
+              aria-label="Pilih bulan"
+              className="flex-1 h-10 rounded-lg border border-line bg-surface px-3 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
+            />
           )}
         </div>
-      )}
+      </Section>
 
-      {/* Ringkasan Pertemuan Terakhir */}
-      <h2 className="font-semibold text-neutral-900 mb-3">Pertemuan Terakhir</h2>
-      {loading ? (
-        <div className="bg-white rounded-xl border border-neutral-200 p-4 animate-pulse">
-          <div className="h-3 bg-neutral-200 rounded w-40 mb-2" />
-          <div className="h-3 bg-neutral-200 rounded w-24" />
-        </div>
-      ) : data?.ringkasan_pertemuan_terakhir ? (
-        <Link
-          href={`/pertemuan/${data.ringkasan_pertemuan_terakhir.id}`}
-          className="block bg-white rounded-xl border border-neutral-200 shadow-sm p-4"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-medium text-sm text-neutral-900">
-                {formatTanggalPendek(data.ringkasan_pertemuan_terakhir.tanggal)}
-              </p>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                {data.ringkasan_pertemuan_terakhir.jumlah_pemain} pemain
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-semibold text-neutral-900">
-                {formatRupiah(data.ringkasan_pertemuan_terakhir.total_tagihan)}
-              </p>
-              <span
-                className={`inline-block text-xs px-2 py-0.5 rounded-full mt-1 ${
-                  data.ringkasan_pertemuan_terakhir.terkunci
-                    ? 'bg-neutral-100 text-neutral-600'
-                    : 'bg-success-50 text-success-700'
-                }`}
-              >
-                {data.ringkasan_pertemuan_terakhir.terkunci ? 'Terkunci' : 'Aktif'}
-              </span>
-            </div>
+      {/* Hero Card — Saldo Kas */}
+      <Section className="pt-0">
+        {loading ? (
+          <div className="rounded-2xl bg-primary-700 p-5 h-24 animate-pulse" />
+        ) : (
+          <HeroCard
+            title="Saldo Kas"
+            value={formatRupiah(data?.saldo_kas ?? 0)}
+            subtitle={filterPeriodeLabel}
+          />
+        )}
+      </Section>
+
+      {/* Quick Actions */}
+      <Section className="pt-0">
+        <QuickActions actions={quickActions} />
+      </Section>
+
+      {/* Feature Cards 2×2 */}
+      <Section className="pt-0">
+        <FeatureCard items={featureItems} />
+      </Section>
+
+      {/* Aktivitas Terbaru */}
+      <Section className="pt-0">
+        <SectionHeader title="Aktivitas Terbaru" />
+        {loading ? (
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-10 w-full rounded-lg" />
+            ))}
           </div>
-        </Link>
-      ) : (
-        <p className="text-sm text-neutral-500 text-center py-4">Belum ada pertemuan</p>
-      )}
+        ) : timelineItems.length === 0 ? (
+          <p className="text-body text-ink-400 text-center py-6">Belum ada transaksi</p>
+        ) : (
+          <Timeline items={timelineItems} />
+        )}
+      </Section>
     </div>
   );
 }

@@ -27,7 +27,13 @@ const tintMap: Record<TintColor, { bg: string; text: string }> = {
 };
 
 function isLucideIcon(value: unknown): value is LucideIcon {
-  return typeof value === 'function';
+  // Lucide icons in modern lucide-react are forwardRef objects, not plain functions
+  if (typeof value === 'function') return true;
+  if (value !== null && typeof value === 'object' && '$$typeof' in (value as object)) {
+    const t = (value as { $$typeof: unknown }).$$typeof;
+    return t === Symbol.for('react.forward_ref') || t === Symbol.for('react.memo');
+  }
+  return false;
 }
 
 /**

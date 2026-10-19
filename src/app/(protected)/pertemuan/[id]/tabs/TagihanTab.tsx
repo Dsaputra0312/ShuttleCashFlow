@@ -7,6 +7,8 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { Avatar } from '@/components/ui/Avatar';
+import { ListRow } from '@/components/ui/ListRow';
 import { formatRupiah } from '@/lib/money';
 
 const BULAN = [
@@ -89,7 +91,6 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
   const [iuranNominal, setIuranNominal] = useState('50000');
   const [iuranLoading, setIuranLoading] = useState(false);
   const [iuranError, setIuranError] = useState<string | null>(null);
-
 
   // Buka kembali sheet
   const [bukaSheet, setBukaSheet] = useState<PesertaWithNama | null>(null);
@@ -254,7 +255,6 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
     }
   };
 
-
   const computedMetode =
     metodeTipe === 'cash'
       ? 'Cash'
@@ -337,21 +337,21 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
   };
 
   const statusBadge = (status: Peserta['status_main']) => {
-    if (status === 'bermain') return <Badge label="Bermain" variant="default" />;
-    if (status === 'selesai') return <Badge label="Selesai" variant="warning" />;
-    return <Badge label="Lunas" variant="success" />;
+    if (status === 'bermain') return <Badge label="Bermain" variant="bermain" />;
+    if (status === 'selesai') return <Badge label="Selesai" variant="selesai" />;
+    return <Badge label="Lunas" variant="lunas" />;
   };
 
   if (loading && pesertaList.length === 0) {
     return (
-      <div className="p-4">
+      <div className="px-5 py-4">
         <SkeletonList count={3} />
       </div>
     );
   }
 
   return (
-    <div className="p-4">
+    <div className="px-5 py-4">
       {pesertaList.length === 0 && (
         <EmptyState
           message="Belum ada peserta"
@@ -359,101 +359,82 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
         />
       )}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0 rounded-xl overflow-hidden border border-line">
         {pesertaList.map((p) => (
-          <div
-            key={p.id}
-            className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 transition-all"
-          >
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <p className="font-semibold text-neutral-900 text-sm truncate">
-                    {p.nama}
-                  </p>
-                  {p.is_member && (
-                    <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-                      Member
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-neutral-600 mt-0.5">
-                  Tagihan:{' '}
-                  <span className="font-semibold text-neutral-900">
-                    {formatRupiah(p.tagihan)}
-                  </span>
-                  {p.dibayar > 0 && ` • Dibayar: ${formatRupiah(p.dibayar)} (${p.metode_bayar || 'Cash'})`}
-                </p>
-                {p.has_active_draft_session && (
-                  <p className="text-[11px] text-amber-600 font-medium mt-1 flex items-center gap-1">
-                    <span>🏸 Sedang main di Lap. {p.active_draft_lapangan}</span>
-                  </p>
-                )}
-              </div>
-              {statusBadge(p.status_main)}
-            </div>
+          <div key={p.id} className="bg-surface">
+            <ListRow
+              left={<Avatar name={p.nama} size="md" />}
+              title={p.nama}
+              subtitle={
+                p.is_member
+                  ? `Member · ${formatRupiah(p.tagihan)}`
+                  : p.bebas_biaya
+                  ? `Bebas Biaya · ${formatRupiah(p.tagihan)}`
+                  : `Non-Member · ${formatRupiah(p.tagihan)}`
+              }
+              right={statusBadge(p.status_main)}
+            />
+            {/* Action buttons */}
+            <div className="px-4 pb-3 flex items-center gap-2">
+              {p.status_main === 'bermain' && !terkunci && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className={`flex-1 ${
+                    p.has_active_draft_session
+                      ? 'opacity-50 cursor-not-allowed'
+                      : ''
+                  }`}
+                  loading={selesaiLoadingId === p.id}
+                  disabled={p.has_active_draft_session}
+                  onClick={() => handleSelesaiMain(p)}
+                  title={
+                    p.has_active_draft_session
+                      ? `Pemain masih aktif bermain di Lapangan ${p.active_draft_lapangan}. Masukkan bola pada sesi untuk menyelesaikan.`
+                      : 'Selesaikan sesi bermain'
+                  }
+                >
+                  {p.has_active_draft_session
+                    ? `Main (Lap. ${p.active_draft_lapangan})`
+                    : 'Selesai Main'}
+                </Button>
+              )}
 
-            {/* Bermain → Selesai Main */}
-            {p.status_main === 'bermain' && !terkunci && (
-              <Button
-                size="sm"
-                variant="secondary"
-                className={`w-full mt-2 ${
-                  p.has_active_draft_session
-                    ? 'opacity-50 cursor-not-allowed bg-neutral-100 text-neutral-400 border-neutral-200'
-                    : ''
-                }`}
-                loading={selesaiLoadingId === p.id}
-                disabled={p.has_active_draft_session}
-                onClick={() => handleSelesaiMain(p)}
-                title={
-                  p.has_active_draft_session
-                    ? `Pemain masih aktif bermain di Lapangan ${p.active_draft_lapangan}. Masukkan bola pada sesi untuk menyelesaikan.`
-                    : 'Selesaikan sesi bermain'
-                }
-              >
-                {p.has_active_draft_session
-                  ? `Main (Lap. ${p.active_draft_lapangan})`
-                  : 'Selesai Main'}
-              </Button>
-            )}
-
-            {/* Selesai → Selesai Main */}
-            {p.status_main === 'selesai' && !terkunci && (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="w-full mt-2"
-                onClick={() => openRincianSheet(p)}
-              >
-                Selesai Main
-              </Button>
-            )}
-
-            {/* Lunas → Rincian / Buka Kembali */}
-            {p.status_main === 'lunas' && !terkunci && (
-              <div className="flex gap-2 mt-2">
+              {p.status_main === 'selesai' && !terkunci && (
                 <Button
                   size="sm"
                   variant="secondary"
                   className="flex-1"
                   onClick={() => openRincianSheet(p)}
                 >
-                  Rincian
+                  Bayar Tagihan
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setBukaSheet(p);
-                    setAlasanBuka('');
-                    setBukaError(null);
-                  }}
-                >
-                  Buka Kembali
-                </Button>
-              </div>
-            )}
+              )}
+
+              {p.status_main === 'lunas' && !terkunci && (
+                <div className="flex gap-2 flex-1">
+                  <Button
+                    size="sm"
+                    variant="tonal"
+                    className="flex-1"
+                    onClick={() => openRincianSheet(p)}
+                  >
+                    Rincian
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setBukaSheet(p);
+                      setAlasanBuka('');
+                      setBukaError(null);
+                    }}
+                  >
+                    Buka Kembali
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -469,22 +450,16 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
             {/* Header info */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-bold text-base text-neutral-900">
+                <p className="font-semibold text-base text-ink-900">
                   {rincianSheet.peserta.nama}
                 </p>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   {rincianSheet.peserta.is_member ? (
-                    <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-                      Member (Bebas Biaya Lapangan)
-                    </span>
+                    <Badge label="Member (Bebas Biaya Lapangan)" variant="member" />
                   ) : rincianSheet.peserta.bebas_biaya ? (
-                    <span className="text-[10px] font-semibold bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full">
-                      Bebas Biaya
-                    </span>
+                    <Badge label="Bebas Biaya" variant="bebas-biaya" />
                   ) : (
-                    <span className="text-[10px] font-semibold bg-neutral-100 text-neutral-700 px-1.5 py-0.5 rounded-full">
-                      Non-Member
-                    </span>
+                    <Badge label="Non-Member" variant="non-member" />
                   )}
                 </div>
               </div>
@@ -494,17 +469,17 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
             {/* Detail Penggunaan Bola */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
+                <h4 className="text-caption font-semibold text-ink-400 uppercase tracking-wider">
                   Detail Penggunaan Bola
                 </h4>
-                <span className="text-xs text-neutral-400">
+                <span className="text-caption text-ink-400">
                   {rincianSheet.breakdown.sesi_details?.length ?? 0} Sesi
                 </span>
               </div>
 
               {(!rincianSheet.breakdown.sesi_details ||
                 rincianSheet.breakdown.sesi_details.length === 0) ? (
-                <div className="bg-neutral-50 rounded-lg p-3 text-center text-xs text-neutral-500">
+                <div className="bg-peach-100 rounded-lg p-3 text-center text-caption text-ink-400">
                   Belum ada sesi bermain yang dicatat
                 </div>
               ) : (
@@ -512,15 +487,15 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                   {rincianSheet.breakdown.sesi_details.map((s, idx) => (
                     <div
                       key={s.sesi_id || idx}
-                      className="bg-neutral-50 border border-neutral-200/80 rounded-lg p-2.5 text-xs flex flex-col gap-1"
+                      className="bg-peach-100 border border-line rounded-lg p-2.5 text-caption flex flex-col gap-1"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-neutral-800">
-                          Sesi {s.sesi_ke} • Lapangan {s.lapangan}
+                        <span className="font-semibold text-ink-900">
+                          Sesi {s.sesi_ke} · Lapangan {s.lapangan}
                         </span>
                         <span className="font-semibold text-primary-700">
                           {s.is_draft ? (
-                            <span className="text-amber-600 font-normal">
+                            <span className="text-icon-orange font-normal">
                               Sesi Aktif
                             </span>
                           ) : (
@@ -528,22 +503,22 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                           )}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-neutral-500 text-[11px]">
+                      <div className="flex items-center justify-between text-ink-400">
                         <span>
                           {s.is_draft ? (
                             'Bola belum diinput'
                           ) : s.is_bearer ? (
                             <>
-                              <span className="font-medium text-neutral-700">
+                              <span className="font-medium text-ink-700">
                                 {s.bola_terpakai_pemain ?? s.bola_terpakai} bola
                               </span>{' '}
                               (total {s.total_pemain} pemain)
                             </>
                           ) : s.bearer_nama ? (
-                            <span className="text-neutral-400">0 bola</span>
+                            <span className="text-ink-400">0 bola</span>
                           ) : (
                             <>
-                              <span className="font-medium text-neutral-700">
+                              <span className="font-medium text-ink-700">
                                 {s.bola_terpakai} bola
                               </span>{' '}
                               dipakai
@@ -552,7 +527,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                         </span>
                         <span className="italic">
                           {s.is_bearer
-                            ? '⭐ Ditanggung sendiri'
+                            ? 'Ditanggung sendiri'
                             : s.bearer_nama
                             ? `Ditanggung ${s.bearer_nama}`
                             : rincianSheet.peserta.bebas_biaya
@@ -567,22 +542,22 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
             </div>
 
             {/* Ringkasan Biaya */}
-            <div className="bg-neutral-50 rounded-xl p-3 border border-neutral-200 flex flex-col gap-1.5 text-sm">
-              <div className="flex justify-between text-neutral-600">
+            <div className="bg-peach-100 rounded-xl p-3 border border-line flex flex-col gap-1.5 text-body">
+              <div className="flex justify-between text-ink-600">
                 <span>Biaya Bola</span>
-                <span className="font-medium text-neutral-900">
+                <span className="font-medium text-ink-900">
                   {formatRupiah(rincianSheet.breakdown.biaya_bola)}
                 </span>
               </div>
-              <div className="flex justify-between text-neutral-600">
+              <div className="flex justify-between text-ink-600">
                 <span>Biaya Lapangan (1x pertemuan)</span>
-                <span className="font-medium text-neutral-900">
+                <span className="font-medium text-ink-900">
                   {rincianSheet.peserta.is_member ? (
-                    <span className="text-emerald-600 font-semibold">
+                    <span className="text-icon-mint font-semibold">
                       Rp 0 (Member)
                     </span>
                   ) : rincianSheet.peserta.bebas_biaya ? (
-                    <span className="text-emerald-600 font-semibold">
+                    <span className="text-icon-mint font-semibold">
                       Rp 0 (Bebas Biaya)
                     </span>
                   ) : (
@@ -591,16 +566,16 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                 </span>
               </div>
               {rincianSheet.breakdown.pembulatan !== 0 && (
-                <div className="flex justify-between text-neutral-600">
+                <div className="flex justify-between text-ink-600">
                   <span>Pembulatan</span>
-                  <span className="font-medium text-neutral-900">
+                  <span className="font-medium text-ink-900">
                     {formatRupiah(rincianSheet.breakdown.pembulatan)}
                   </span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-neutral-200 pt-2 mt-1">
-                <span className="font-bold text-neutral-900">Total Tagihan</span>
-                <span className="font-extrabold text-base text-primary-600">
+              <div className="flex justify-between border-t border-line pt-2 mt-1">
+                <span className="font-bold text-ink-900">Total Tagihan</span>
+                <span className="font-extrabold text-base text-primary-700 nums">
                   {formatRupiah(rincianSheet.breakdown.tagihan_total)}
                 </span>
               </div>
@@ -611,19 +586,19 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
               !rincianSheet.peserta.bebas_biaya &&
               rincianSheet.peserta.status_main !== 'lunas' &&
               !terkunci && (
-                <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-xl p-3 flex items-center justify-between gap-2.5">
+                <div className="bg-tint-mint border border-line rounded-xl p-3 flex items-center justify-between gap-2.5">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-emerald-900">
+                    <p className="text-caption font-bold text-icon-mint">
                       Pemain Non-Member
                     </p>
-                    <p className="text-[11px] text-emerald-700 leading-tight mt-0.5">
+                    <p className="text-caption text-ink-600 leading-tight mt-0.5">
                       Bayar iuran bulanan agar bebas biaya sewa lapangan.
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => openIuranSheetForPeserta(rincianSheet.peserta)}
-                    className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-xs shrink-0 transition-colors"
+                    className="px-3 py-1.5 text-caption font-semibold rounded-lg bg-primary-700 text-white hover:bg-primary-900 shrink-0 transition-colors"
                   >
                     + Bayar Iuran
                   </button>
@@ -632,12 +607,12 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
 
             {/* Pembayaran Section */}
             {rincianSheet.peserta.status_main === 'lunas' ? (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex flex-col gap-1">
-                <div className="flex items-center justify-between text-emerald-800 font-semibold text-sm">
-                  <span>✓ Sudah Lunas</span>
-                  <span>{formatRupiah(rincianSheet.peserta.dibayar)}</span>
+              <div className="bg-tint-mint border border-line rounded-xl p-3 flex flex-col gap-1">
+                <div className="flex items-center justify-between text-icon-mint font-semibold text-body">
+                  <span>Sudah Lunas</span>
+                  <span className="nums">{formatRupiah(rincianSheet.peserta.dibayar)}</span>
                 </div>
-                <p className="text-xs text-emerald-700">
+                <p className="text-caption text-ink-600">
                   Metode:{' '}
                   <span className="font-medium">
                     {rincianSheet.peserta.metode_bayar || 'Cash'}
@@ -655,8 +630,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
             ) : (
               <div className="flex flex-col gap-3 pt-1">
                 {rincianSheet.peserta.has_active_draft_session && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 text-xs text-amber-800 flex items-center gap-1.5">
-                    <span>⚠️</span>
+                  <div className="bg-warning-tonal border border-warning/20 rounded-lg p-2.5 text-caption text-warning flex items-center gap-1.5">
                     <span>
                       Pemain masih bermain di Lapangan{' '}
                       {rincianSheet.peserta.active_draft_lapangan}. Selesaikan sesi
@@ -667,33 +641,31 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
 
                 {/* Metode Bayar Selector */}
                 <div>
-                  <label className="text-xs font-semibold text-neutral-700 block mb-1.5">
+                  <label className="text-caption font-semibold text-ink-700 block mb-1.5">
                     Metode Pembayaran
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setMetodeTipe('cash')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-body font-medium transition-all ${
                         metodeTipe === 'cash'
-                          ? 'border-primary-600 bg-primary-50 text-primary-700 shadow-sm'
-                          : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                          ? 'border-primary-700 bg-primary-100 text-primary-700'
+                          : 'border-line bg-surface text-ink-700 hover:bg-peach-100'
                       }`}
                     >
-                      <span>💵</span>
-                      <span>Cash</span>
+                      Cash
                     </button>
                     <button
                       type="button"
                       onClick={() => setMetodeTipe('transfer')}
-                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${
+                      className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-body font-medium transition-all ${
                         metodeTipe === 'transfer'
-                          ? 'border-primary-600 bg-primary-50 text-primary-700 shadow-sm'
-                          : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50'
+                          ? 'border-primary-700 bg-primary-100 text-primary-700'
+                          : 'border-line bg-surface text-ink-700 hover:bg-peach-100'
                       }`}
                     >
-                      <span>💳</span>
-                      <span>Transfer</span>
+                      Transfer
                     </button>
                   </div>
                 </div>
@@ -701,13 +673,13 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                 {/* Dropdown Transfer / E-Wallet */}
                 {metodeTipe === 'transfer' && (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-neutral-700">
+                    <label className="text-caption font-semibold text-ink-700">
                       Jenis Bank / E-Wallet
                     </label>
                     <select
                       value={jenisTransfer}
                       onChange={(e) => setJenisTransfer(e.target.value)}
-                      className="w-full text-sm rounded-lg border border-neutral-300 py-2.5 px-3 bg-white text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full text-body rounded-lg border border-line py-2.5 px-3 bg-surface text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700 focus:border-transparent"
                     >
                       <optgroup label="Bank Transfer">
                         <option value="BCA">Bank BCA</option>
@@ -716,7 +688,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                         <option value="BNI">Bank BNI</option>
                         <option value="BSI">Bank BSI</option>
                       </optgroup>
-                      <optgroup label="E-Wallet & QRIS">
+                      <optgroup label="E-Wallet &amp; QRIS">
                         <option value="GoPay">GoPay</option>
                         <option value="OVO">OVO</option>
                         <option value="DANA">DANA</option>
@@ -733,7 +705,6 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                         placeholder="Tulis nama bank/e-wallet..."
                         value={customTransfer}
                         onChange={(e) => setCustomTransfer(e.target.value)}
-                        className="text-xs mt-1"
                       />
                     )}
                   </div>
@@ -749,7 +720,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                 />
 
                 {bayarError && (
-                  <p className="text-xs text-danger-600 font-medium" role="alert">
+                  <p className="text-caption text-danger font-medium" role="alert">
                     {bayarError}
                   </p>
                 )}
@@ -785,7 +756,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                       setAlasanBuka('');
                       setBukaError(null);
                     }}
-                    className="text-xs text-neutral-400 hover:text-danger-600 transition-colors text-center pt-1"
+                    className="text-caption text-ink-400 hover:text-danger transition-colors text-center pt-1"
                   >
                     Buka kembali status bermain
                   </button>
@@ -804,7 +775,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
       >
         {bukaSheet && (
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-neutral-600">
+            <p className="text-body text-ink-600">
               Pembayaran <span className="font-semibold">{bukaSheet.nama}</span> akan
               direset ke status Bermain.
             </p>
@@ -815,7 +786,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
               placeholder="Wajib diisi"
             />
             {bukaError && (
-              <p className="text-sm text-danger-600" role="alert">
+              <p className="text-body text-danger" role="alert">
                 {bukaError}
               </p>
             )}
@@ -847,30 +818,30 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
         title={`Catat Iuran — ${iuranPeserta?.nama ?? ''}`}
       >
         <div className="flex flex-col gap-4">
-          <div className="bg-emerald-50/70 border border-emerald-200/70 rounded-xl p-3">
-            <p className="text-xs text-emerald-800 leading-relaxed">
+          <div className="bg-tint-mint border border-line rounded-xl p-3">
+            <p className="text-caption text-ink-600 leading-relaxed">
               Setelah iuran dicatat, status <strong>{iuranPeserta?.nama}</strong> otomatis menjadi <strong>Member</strong> untuk periode bulan ini dan biaya sewa lapangan pada pertemuan ini otomatis menjadi <strong>Rp 0</strong>.
             </p>
           </div>
 
           <div className="flex gap-3">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm font-medium text-neutral-700">Tahun</label>
+              <label className="text-body font-medium text-ink-700">Tahun</label>
               <input
                 type="number"
                 value={iuranTahun}
                 onChange={(e) => setIuranTahun(parseInt(e.target.value, 10))}
                 min={2020}
                 max={2100}
-                className="h-11 rounded-lg border border-neutral-300 px-3 text-base text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="h-11 rounded-lg border border-line px-3 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
               />
             </div>
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm font-medium text-neutral-700">Bulan</label>
+              <label className="text-body font-medium text-ink-700">Bulan</label>
               <select
                 value={iuranBulan}
                 onChange={(e) => setIuranBulan(parseInt(e.target.value, 10))}
-                className="h-11 rounded-lg border border-neutral-300 px-3 text-base text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="h-11 rounded-lg border border-line px-3 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
               >
                 {BULAN.map((nama, idx) => (
                   <option key={idx + 1} value={idx + 1}>
@@ -891,7 +862,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
           />
 
           {iuranError && (
-            <p className="text-sm text-danger-600" role="alert">
+            <p className="text-body text-danger" role="alert">
               {iuranError}
             </p>
           )}

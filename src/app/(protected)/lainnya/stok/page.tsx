@@ -2,12 +2,23 @@
 
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ShoppingBag, Settings2 } from 'lucide-react';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { HeroCard } from '@/components/ui/HeroCard';
+import { StatTile } from '@/components/ui/StatTile';
+import { Timeline } from '@/components/ui/Timeline';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
 import { Stepper } from '@/components/ui/Stepper';
+import { Tabs } from '@/components/ui/Tabs';
+import { TintCard } from '@/components/ui/TintCard';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
 import { formatRupiah } from '@/lib/money';
@@ -283,444 +294,402 @@ function StokPageInner() {
   const previewAdjNet = operasiTipe === '+' ? previewAdjTotalBiji : -previewAdjTotalBiji;
   const previewNewTotal = (stok?.stok_saat_ini ?? 0) + previewAdjNet;
 
-  return (
-    <div className="p-4 max-w-xl mx-auto">
-      {/* Back */}
-      <button
-        type="button"
-        onClick={() => router.push('/lainnya')}
-        className="text-primary-600 text-sm font-medium mb-3 flex items-center gap-1 active:opacity-75"
-      >
-        ← Kembali
-      </button>
+  const timelineItems = (stok?.riwayat.data ?? []).map((item) => {
+    const formattedDate = new Date(item.dibuat_pada).toLocaleDateString('id-ID', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
 
-      <h1 className="text-xl font-bold text-neutral-900 mb-4">Stok Bola</h1>
-
-      {/* Stok Utama Card */}
-      <div className="bg-white rounded-2xl border border-neutral-200/90 shadow-sm p-5 mb-4">
-        {loading ? (
-          <p className="text-neutral-500 text-sm text-center py-4">Memuat data stok...</p>
-        ) : (
-          <>
-            <div className="text-center mb-4">
-              <p className="text-xs uppercase tracking-wider text-neutral-400 font-semibold mb-1">
-                Sisa Bola Saat Ini
-              </p>
-              <p className="text-3xl sm:text-4xl font-extrabold text-primary-700 tracking-tight">
-                {stok?.stok_saat_ini_formatted ?? formatStokBola(stok?.stok_saat_ini ?? 0)}
-              </p>
-              <p className="text-xs text-neutral-500 mt-1.5 font-medium">
-                Total <span className="font-semibold text-neutral-800">{stok?.stok_saat_ini ?? 0}</span> biji bola tersisa
-                <span className="text-neutral-400"> (1 Tabung = 12 Biji)</span>
-              </p>
+    if (item.tipe === 'pembelian') {
+      return {
+        icon: ShoppingBag,
+        time: formattedDate,
+        content: (
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge label="PEMBELIAN" variant="warning" />
+                <span className="font-semibold text-caption text-ink-900">
+                  Beli {item.jumlah_tabung} Tabung ({item.jumlah_tabung * item.isi_per_tabung} bola)
+                </span>
+              </div>
             </div>
+            <span className="text-caption font-bold text-danger nums whitespace-nowrap">
+              {formatRupiah(item.harga_total)}
+            </span>
+          </div>
+        ),
+      };
+    }
 
-            {stok && (
-              <div className="grid grid-cols-3 gap-2 text-center text-xs text-neutral-600 border-t border-neutral-100 pt-3.5">
-                <div className="bg-neutral-50 rounded-xl py-2 px-1 border border-neutral-100">
-                  <p className="font-bold text-neutral-800 text-sm">
-                    {stok.total_pembelian_tabung ?? Math.floor(stok.total_pembelian_bola / 12)} Tabung
-                  </p>
-                  <p className="text-[11px] text-neutral-500 mt-0.5">
-                    Dibeli ({stok.total_pembelian_bola} bola)
-                  </p>
-                </div>
-                <div className="bg-neutral-50 rounded-xl py-2 px-1 border border-neutral-100">
-                  <p className="font-bold text-neutral-800 text-sm">{stok.total_terpakai} Biji</p>
-                  <p className="text-[11px] text-neutral-500 mt-0.5">Terpakai di sesi</p>
-                </div>
-                <div className="bg-neutral-50 rounded-xl py-2 px-1 border border-neutral-100">
-                  <p className="font-bold text-neutral-800 text-sm">
-                    {stok.total_koreksi >= 0 ? '+' : ''}{stok.total_koreksi} Biji
-                  </p>
-                  <p className="text-[11px] text-neutral-500 mt-0.5">Penyesuaian</p>
-                </div>
-              </div>
+    return {
+      icon: Settings2,
+      time: formattedDate,
+      content: (
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Badge
+                label="KOREKSI"
+                variant={item.jumlah >= 0 ? 'success' : 'danger'}
+              />
+              <span className="font-semibold text-caption text-ink-900">
+                {item.jumlah >= 0 ? '+' : ''}{item.jumlah} bola{' '}
+                <span className="font-normal text-ink-400">
+                  ({formatStokBola(Math.abs(item.jumlah))})
+                </span>
+              </span>
+            </div>
+            {item.alasan && (
+              <p className="text-caption text-ink-600 mt-1 font-medium">{item.alasan}</p>
             )}
-          </>
+          </div>
+        </div>
+      ),
+    };
+  });
+
+  return (
+    <div>
+      <PageHeader
+        title="Stok Bola"
+        onBack={() => router.push('/lainnya')}
+      />
+
+      <div className="p-4 max-w-xl mx-auto">
+        {/* Stok Utama HeroCard */}
+        {loading ? (
+          <div className="rounded-2xl bg-primary-700 p-5 h-28 animate-pulse mb-4" />
+        ) : (
+          <HeroCard
+            title="SISA BOLA SAAT INI"
+            value={stok?.stok_saat_ini_formatted ?? formatStokBola(stok?.stok_saat_ini ?? 0)}
+            subtitle={`Total ${stok?.stok_saat_ini ?? 0} biji bola tersisa (1 Tabung = 12 Biji)`}
+            className="mb-4"
+          />
         )}
-      </div>
 
-      {/* Action buttons */}
-      <div className="flex gap-3 mb-5">
-        <Button
-          variant="secondary"
-          className="flex-1 font-semibold"
-          onClick={() => {
-            setBeliTabung(1);
-            setBeliHarga('');
-            setBeliError(null);
-            setBeliOpen(true);
-          }}
-        >
-          🛒 Beli Bola (Tabung)
-        </Button>
-        <Button
-          variant="secondary"
-          className="flex-1 font-semibold"
-          onClick={openKoreksiModal}
-        >
-          ⚙️ Atur / Koreksi Stok
-        </Button>
-      </div>
-
-      {/* Riwayat */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-bold text-neutral-900 text-base">Riwayat Pergerakan Stok</h2>
-        <span className="text-xs text-neutral-500">
-          {pagination?.total ?? 0} catatan
-        </span>
-      </div>
-
-      {loading && <SkeletonList count={3} />}
-
-      {!loading && (stok?.riwayat.data ?? []).length === 0 && (
-        <EmptyState
-          message="Belum ada riwayat"
-          hint="Riwayat pembelian bola dan koreksi fisik akan tercatat di sini"
-        />
-      )}
-
-      <div className="flex flex-col gap-2.5">
-        {(stok?.riwayat.data ?? []).map((item) => (
-          <div
-            key={item.id}
-            className="bg-white rounded-xl border border-neutral-200/90 shadow-sm p-3.5 transition-all"
-          >
-            {item.tipe === 'pembelian' ? (
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">
-                      PEMBELIAN
-                    </span>
-                    <p className="font-semibold text-sm text-neutral-900">
-                      Beli {item.jumlah_tabung} Tabung ({item.jumlah_tabung * item.isi_per_tabung} bola)
-                    </p>
-                  </div>
-                  <p className="text-xs text-neutral-500 mt-1">
-                    {new Date(item.dibuat_pada).toLocaleDateString('id-ID', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </p>
-                </div>
-                <p className="text-sm font-bold text-danger-700 whitespace-nowrap">
-                  {formatRupiah(item.harga_total)}
-                </p>
-              </div>
-            ) : (
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        item.jumlah >= 0
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-rose-100 text-rose-800'
-                      }`}
-                    >
-                      KOREKSI
-                    </span>
-                    <p className="font-semibold text-sm text-neutral-900">
-                      {item.jumlah >= 0 ? '+' : ''}{item.jumlah} bola{' '}
-                      <span className="text-xs font-normal text-neutral-500">
-                        ({formatStokBola(Math.abs(item.jumlah))})
-                      </span>
-                    </p>
-                  </div>
-                  <p className="text-xs text-neutral-600 mt-1 font-medium">{item.alasan}</p>
-                  <p className="text-[11px] text-neutral-400 mt-0.5">
-                    {new Date(item.dibuat_pada).toLocaleDateString('id-ID', {
-                      weekday: 'short',
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </p>
-                </div>
-              </div>
-            )}
+        {/* StatTile 3 kolom */}
+        {stok && (
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <StatTile
+              label={`Dibeli (${stok.total_pembelian_bola} bola)`}
+              value={`${stok.total_pembelian_tabung ?? Math.floor(stok.total_pembelian_bola / 12)} Tabung`}
+            />
+            <StatTile
+              label="Terpakai di sesi"
+              value={`${stok.total_terpakai} Biji`}
+            />
+            <StatTile
+              label="Penyesuaian"
+              value={`${stok.total_koreksi >= 0 ? '+' : ''}${stok.total_koreksi} Biji`}
+            />
           </div>
-        ))}
-      </div>
+        )}
 
-      {/* Pagination */}
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-5">
+        {/* Action buttons */}
+        <div className="flex gap-3 mb-6">
           <Button
-            variant="secondary"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
+            variant="tonal"
+            className="flex-1 font-semibold flex items-center justify-center gap-2"
+            onClick={() => {
+              setBeliTabung(1);
+              setBeliHarga('');
+              setBeliError(null);
+              setBeliOpen(true);
+            }}
           >
-            Sebelumnya
+            <AppIcon icon={ShoppingBag} size="sm" />
+            Beli Bola (Tabung)
           </Button>
-          <span className="text-xs font-medium text-neutral-600">
-            {page} / {pagination.total_pages}
+          <Button
+            variant="tonal"
+            className="flex-1 font-semibold flex items-center justify-center gap-2"
+            onClick={openKoreksiModal}
+          >
+            <AppIcon icon={Settings2} size="sm" />
+            Atur / Koreksi Stok
+          </Button>
+        </div>
+
+        {/* Riwayat */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-heading text-heading text-ink-900">Riwayat Pergerakan Stok</h2>
+          <span className="text-caption text-ink-400">
+            {pagination?.total ?? 0} catatan
           </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page >= pagination.total_pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Berikutnya
-          </Button>
         </div>
-      )}
 
-      {/* Beli Bola Sheet */}
-      <BottomSheet
-        open={beliOpen}
-        onClose={() => setBeliOpen(false)}
-        title="Pembelian Bola"
-      >
-        <div className="flex flex-col gap-4">
-          <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs text-neutral-600">
-            <p className="font-semibold text-neutral-800 mb-0.5">Ketentuan Pembelian</p>
-            <p>
-              Pembelian bola dihitung per tabung. 1 Tabung = <strong>12 biji bola</strong>.
-              Pengeluaran kas otomatis dicatat.
-            </p>
-          </div>
+        {loading && <SkeletonList count={3} />}
 
-          <Stepper
-            label="Jumlah Tabung"
-            value={beliTabung}
-            onChange={setBeliTabung}
-            min={1}
+        {!loading && timelineItems.length === 0 && (
+          <EmptyState
+            message="Belum ada riwayat"
+            hint="Riwayat pembelian bola dan koreksi fisik akan tercatat di sini"
           />
-          <p className="text-xs text-primary-700 font-semibold -mt-2">
-            = {beliTabung * 12} biji bola baru
-          </p>
+        )}
 
-          <Input
-            label="Total Harga Beli (Rp)"
-            type="number"
-            value={beliHarga}
-            onChange={(e) => setBeliHarga(e.target.value)}
-            min={1}
-            placeholder="Contoh: 150000"
-          />
+        {!loading && timelineItems.length > 0 && (
+          <Card padding className="mb-4">
+            <Timeline items={timelineItems} />
+          </Card>
+        )}
 
-          {beliError && (
-            <p className="text-sm text-danger-600" role="alert">
-              {beliError}
-            </p>
-          )}
-
-          <div className="flex gap-3 mt-1">
-            <Button variant="secondary" onClick={() => setBeliOpen(false)} className="flex-1">
-              Batal
+        {/* Pagination */}
+        {pagination && pagination.total_pages > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-4 mb-6">
+            <Button
+              variant="tonal"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Sebelumnya
             </Button>
-            <Button onClick={handleBeli} loading={beliLoading} className="flex-1">
-              Simpan Pembelian
+            <span className="text-caption font-medium text-ink-600">
+              {page} / {pagination.total_pages}
+            </span>
+            <Button
+              variant="tonal"
+              size="sm"
+              disabled={page >= pagination.total_pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Berikutnya
             </Button>
           </div>
-        </div>
-      </BottomSheet>
+        )}
 
-      {/* Atur / Koreksi Stok Sheet */}
-      <BottomSheet
-        open={koreksiOpen}
-        onClose={() => setKoreksiOpen(false)}
-        title="Atur / Koreksi Stok Bola"
-      >
-        <div className="flex flex-col gap-4">
-          {/* Mode Switcher */}
-          <div className="flex bg-neutral-100 p-1 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setKoreksiMode('set_stok')}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                koreksiMode === 'set_stok'
-                  ? 'bg-white text-neutral-900 shadow-sm'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              Atur Sisa Fisik (Stok Awal)
-            </button>
-            <button
-              type="button"
-              onClick={() => setKoreksiMode('tambah_kurang')}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                koreksiMode === 'tambah_kurang'
-                  ? 'bg-white text-neutral-900 shadow-sm'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              Tambah / Kurang
-            </button>
-          </div>
-
-          {koreksiMode === 'set_stok' ? (
-            <div className="flex flex-col gap-3">
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                Masukkan sisa fisik bola riil saat ini (misal sisa <strong>10 tabung 3 biji</strong>).
-                Sistem akan menghitung penyesuaian otomatis agar stok sama persis.
+        {/* Beli Bola Sheet */}
+        <BottomSheet
+          open={beliOpen}
+          onClose={() => setBeliOpen(false)}
+          title="Pembelian Bola"
+        >
+          <div className="flex flex-col gap-4">
+            <TintCard variant="peach" className="p-3 text-caption text-ink-600">
+              <p className="font-semibold text-ink-900 mb-0.5">Ketentuan Pembelian</p>
+              <p>
+                Pembelian bola dihitung per tabung. 1 Tabung = <strong>12 biji bola</strong>.
+                Pengeluaran kas otomatis dicatat.
               </p>
+            </TintCard>
 
-              <div className="grid grid-cols-2 gap-3">
+            <Stepper
+              label="Jumlah Tabung"
+              value={beliTabung}
+              onChange={setBeliTabung}
+              min={1}
+            />
+            <p className="text-caption text-primary-700 font-semibold -mt-2">
+              = {beliTabung * 12} biji bola baru
+            </p>
+
+            <Input
+              label="Total Harga Beli (Rp)"
+              type="number"
+              value={beliHarga}
+              onChange={(e) => setBeliHarga(e.target.value)}
+              min={1}
+              placeholder="Contoh: 150000"
+            />
+
+            {beliError && (
+              <p className="text-caption text-danger" role="alert">
+                {beliError}
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-1">
+              <Button variant="ghost" onClick={() => setBeliOpen(false)} className="flex-1">
+                Batal
+              </Button>
+              <Button onClick={handleBeli} loading={beliLoading} className="flex-1">
+                Simpan Pembelian
+              </Button>
+            </div>
+          </div>
+        </BottomSheet>
+
+        {/* Atur / Koreksi Stok Sheet */}
+        <BottomSheet
+          open={koreksiOpen}
+          onClose={() => setKoreksiOpen(false)}
+          title="Atur / Koreksi Stok Bola"
+        >
+          <div className="flex flex-col gap-4">
+            {/* Mode Switcher */}
+            <Tabs
+              tabs={[
+                { key: 'set_stok', label: 'Atur Sisa Fisik' },
+                { key: 'tambah_kurang', label: 'Tambah / Kurang' },
+              ]}
+              active={koreksiMode}
+              onChange={(k) => setKoreksiMode(k as 'set_stok' | 'tambah_kurang')}
+              variant="pill"
+              className="w-full"
+            />
+
+            {koreksiMode === 'set_stok' ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-caption text-ink-600 leading-relaxed">
+                  Masukkan sisa fisik bola riil saat ini (misal sisa <strong>10 tabung 3 biji</strong>).
+                  Sistem akan menghitung penyesuaian otomatis agar stok sama persis.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Jumlah Tabung"
+                    type="number"
+                    min={0}
+                    value={setTabung}
+                    onChange={(e) => setSetTabung(e.target.value)}
+                    placeholder="0"
+                  />
+                  <Input
+                    label="Jumlah Biji"
+                    type="number"
+                    min={0}
+                    max={12}
+                    hint="Maks. 12 biji"
+                    value={setBiji}
+                    onChange={handleSetBijiChange}
+                    placeholder="0"
+                  />
+                </div>
+
+                {/* Live Preview */}
+                <TintCard variant="lavender" className="p-3 text-caption flex flex-col gap-1">
+                  <div className="flex justify-between text-ink-900 font-semibold">
+                    <span>Target Sisa Stok:</span>
+                    <span>{formatStokBola(previewTargetBiji)}</span>
+                  </div>
+                  <div className="flex justify-between text-ink-600">
+                    <span>Stok saat ini:</span>
+                    <span>{formatStokBola(stok?.stok_saat_ini ?? 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-primary-700 border-t border-line pt-1 mt-0.5">
+                    <span>Penyesuaian yang dicatat:</span>
+                    <span className="font-bold">
+                      {previewDiff >= 0 ? `+${previewDiff}` : previewDiff} bola
+                    </span>
+                  </div>
+                </TintCard>
+
                 <Input
-                  label="Jumlah Tabung"
-                  type="number"
-                  min={0}
-                  value={setTabung}
-                  onChange={(e) => setSetTabung(e.target.value)}
-                  placeholder="0"
-                />
-                <Input
-                  label="Jumlah Biji"
-                  type="number"
-                  min={0}
-                  max={12}
-                  hint="Maks. 12 biji"
-                  value={setBiji}
-                  onChange={handleSetBijiChange}
-                  placeholder="0"
-                />
-              </div>
-
-              {/* Live Preview */}
-              <div className="bg-primary-50 border border-primary-200/80 rounded-xl p-3 text-xs flex flex-col gap-1">
-                <div className="flex justify-between text-primary-900 font-semibold">
-                  <span>Target Sisa Stok:</span>
-                  <span>{formatStokBola(previewTargetBiji)}</span>
-                </div>
-                <div className="flex justify-between text-neutral-600">
-                  <span>Stok saat ini:</span>
-                  <span>{formatStokBola(stok?.stok_saat_ini ?? 0)}</span>
-                </div>
-                <div className="flex justify-between text-primary-800 border-t border-primary-200/60 pt-1 mt-0.5">
-                  <span>Penyesuaian yang dicatat:</span>
-                  <span className="font-bold">
-                    {previewDiff >= 0 ? `+${previewDiff}` : previewDiff} bola
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-neutral-700">
-                  Keterangan / Alasan (Opsional)
-                </label>
-                <input
+                  label="Keterangan / Alasan (Opsional)"
                   type="text"
                   value={koreksiAlasan}
                   onChange={(e) => setKoreksiAlasan(e.target.value)}
                   placeholder={`Contoh: Pencatatan sisa fisik (${setTabung} Tabung ${setBiji} Biji)`}
-                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                Pilih operasi untuk menambah (misal bonus/hibah) atau mengurangi stok bola (misal rusak/hilang).
-              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="text-caption text-ink-600 leading-relaxed">
+                  Pilih operasi untuk menambah (misal bonus/hibah) atau mengurangi stok bola (misal rusak/hilang).
+                </p>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setOperasiTipe('-')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${
-                    operasiTipe === '-'
-                      ? 'bg-rose-50 border-rose-300 text-rose-700'
-                      : 'border-neutral-200 text-neutral-600'
-                  }`}
-                >
-                  - Kurang Stok (Rusak/Hilang)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOperasiTipe('+')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${
-                    operasiTipe === '+'
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                      : 'border-neutral-200 text-neutral-600'
-                  }`}
-                >
-                  + Tambah Stok (Bonus/Lainnya)
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label="Tabung"
-                  type="number"
-                  min={0}
-                  value={adjTabung}
-                  onChange={(e) => setAdjTabung(e.target.value)}
-                  placeholder="0"
-                />
-                <Input
-                  label="Biji"
-                  type="number"
-                  min={0}
-                  max={12}
-                  hint="Maks. 12 biji"
-                  value={adjBiji}
-                  onChange={handleAdjBijiChange}
-                  placeholder="0"
-                />
-              </div>
-
-              {/* Live Preview */}
-              <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs flex flex-col gap-1">
-                <div className="flex justify-between text-neutral-700">
-                  <span>Perubahan:</span>
-                  <span className="font-bold">
-                    {operasiTipe}{previewAdjTotalBiji} biji ({operasiTipe}{formatStokBola(previewAdjTotalBiji)})
-                  </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOperasiTipe('-')}
+                    className={[
+                      'flex-1 py-2 px-3 text-caption font-bold rounded-lg border transition-all',
+                      operasiTipe === '-'
+                        ? 'bg-danger-tonal border-danger text-danger'
+                        : 'border-line text-ink-600 bg-surface',
+                    ].join(' ')}
+                  >
+                    - Kurang Stok (Rusak/Hilang)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOperasiTipe('+')}
+                    className={[
+                      'flex-1 py-2 px-3 text-caption font-bold rounded-lg border transition-all',
+                      operasiTipe === '+'
+                        ? 'bg-tint-mint border-tint-mint text-icon-mint'
+                        : 'border-line text-ink-600 bg-surface',
+                    ].join(' ')}
+                  >
+                    + Tambah Stok (Bonus/Lainnya)
+                  </button>
                 </div>
-                <div className="flex justify-between text-neutral-900 border-t border-neutral-200 pt-1 mt-0.5 font-semibold">
-                  <span>Estimasi sisa stok baru:</span>
-                  <span className="text-primary-700 font-bold">{formatStokBola(previewNewTotal)}</span>
-                </div>
-              </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-neutral-700">
-                  Alasan Penyesuaian (Wajib)
-                </label>
-                <textarea
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Tabung"
+                    type="number"
+                    min={0}
+                    value={adjTabung}
+                    onChange={(e) => setAdjTabung(e.target.value)}
+                    placeholder="0"
+                  />
+                  <Input
+                    label="Biji"
+                    type="number"
+                    min={0}
+                    max={12}
+                    hint="Maks. 12 biji"
+                    value={adjBiji}
+                    onChange={handleAdjBijiChange}
+                    placeholder="0"
+                  />
+                </div>
+
+                {/* Live Preview */}
+                <TintCard variant="lavender" className="p-3 text-caption flex flex-col gap-1">
+                  <div className="flex justify-between text-ink-600">
+                    <span>Perubahan:</span>
+                    <span className="font-bold">
+                      {operasiTipe}{previewAdjTotalBiji} biji ({operasiTipe}{formatStokBola(previewAdjTotalBiji)})
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-ink-900 border-t border-line pt-1 mt-0.5 font-semibold">
+                    <span>Estimasi sisa stok baru:</span>
+                    <span className="text-primary-700 font-bold">{formatStokBola(previewNewTotal)}</span>
+                  </div>
+                </TintCard>
+
+                <Textarea
+                  label="Alasan Penyesuaian (Wajib)"
                   value={koreksiAlasan}
                   onChange={(e) => setKoreksiAlasan(e.target.value)}
                   placeholder="Contoh: 2 biji bola penyok / rusak saat sesi main"
                   rows={2}
-                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
+            )}
+
+            {koreksiError && (
+              <p className="text-caption text-danger" role="alert">
+                {koreksiError}
+              </p>
+            )}
+
+            <div className="flex gap-3 mt-1">
+              <Button variant="ghost" onClick={() => setKoreksiOpen(false)} className="flex-1">
+                Batal
+              </Button>
+              <Button onClick={handleKoreksi} loading={koreksiLoading} className="flex-1">
+                Simpan Penyesuaian
+              </Button>
             </div>
-          )}
-
-          {koreksiError && (
-            <p className="text-sm text-danger-600" role="alert">
-              {koreksiError}
-            </p>
-          )}
-
-          <div className="flex gap-3 mt-1">
-            <Button variant="secondary" onClick={() => setKoreksiOpen(false)} className="flex-1">
-              Batal
-            </Button>
-            <Button onClick={handleKoreksi} loading={koreksiLoading} className="flex-1">
-              Simpan Penyesuaian
-            </Button>
           </div>
-        </div>
-      </BottomSheet>
+        </BottomSheet>
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      </div>
     </div>
   );
 }
 
 export default function StokPage() {
   return (
-    <Suspense fallback={<div className="p-4 text-center text-sm text-neutral-500">Memuat...</div>}>
+    <Suspense fallback={<div className="p-4 text-center text-caption text-ink-400">Memuat...</div>}>
       <StokPageInner />
     </Suspense>
   );

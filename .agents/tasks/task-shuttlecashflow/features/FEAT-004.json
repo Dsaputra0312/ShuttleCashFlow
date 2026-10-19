@@ -1,0 +1,48 @@
+{
+  "id": "FEAT-004",
+  "type": "feat",
+  "description": "Migrasi semua halaman ke design system baru. Setiap halaman diganti pola lama (hardcoded neutral-* colors, border-neutral-200, dll) ke komponen baru (AppShell, PageHeader, ListRow, Card, Badge, dll) dan token baru. Logika bisnis, fetch API, state management — TIDAK BERUBAH sama sekali. Bergantung pada FEAT-001, FEAT-002, dan FEAT-003 selesai semua.",
+  "status": "completed",
+  "steps": [
+    "Migrasi src/app/login/page.tsx: Bungkus dalam div latar peach-50. Bagian atas: HeroCard kecil atau blok dengan logo + nama app (teks title-lg). Form di dalam Card putih dengan padding-lg. Input pakai Input baru. Button pakai Button lg w-full (primary). Eye icon pakai AppIcon Eye/EyeOff dari lucide. Hapus inline SVG eye icon.",
+    "Migrasi src/app/(protected)/layout.tsx: Ganti wrapper div ke AppShell. Pastikan BottomNav baru dipakai. Sesuaikan padding bawah main agar konten tidak tertutup BottomNav mengambang (pb-[112px] atau lebih).",
+    "Migrasi src/app/(protected)/page.tsx (Beranda): Susun ulang layout dengan komponen baru. (1) SelectorCard — hardcode sementara nama grup 'ShuttleCashFlow', subtitle dari status pertemuan terakhir. (2) HeroCard — 'Saldo Kas', nilai formatRupiah(saldo_kas), subtitle periode filter. (3) QuickActions — 3 aksi kontekstual (tidak ada pertemuan aktif: 'Buat Pertemuan' CalendarPlus orange, 'Catat Kas' Wallet mint, 'Lihat Stok' ShuttlecockIcon peach). (4) FeatureCard 2x2 — Pertemuan (CalendarDays orange /pertemuan), Pemain (Users lavender /pemain), Kas (Wallet mint /kas), Stok Bola (ShuttlecockIcon peach /lainnya/stok). (5) Section 'Aktivitas Terbaru' dengan Timeline (transaksi_terbaru). (6) BarChart pemasukan/pengeluaran. Ganti SkeletonCard lama ke Skeleton baru. Ganti filter toggle ke Tabs component. Pertahankan SEMUA logika fetch/state.",
+    "Migrasi src/app/(protected)/pertemuan/page.tsx: PageHeader judul 'Pertemuan'. ListRow per pertemuan (kiri: IconTile CalendarDays orange, judul formatTanggal, subtitle 'N pemain', kanan: Badge status). FAB: IconButton CirclePlus primary lg floating bottom-right. ConfirmDialog hapus jika ada. Modal buat pertemuan pakai BottomSheet baru. Ganti semua button/style lama. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/pertemuan/[id]/page.tsx: PageHeader judul formatTanggal singkat, aksi kanan: IconButton Lock/LockOpen dan IconButton Copy. Badge status di PageHeader. Tabs (pill) Sesi/Tagihan/Pengeluaran. BottomSheet buka kunci dan ubah tanggal pakai ConfirmDialog atau BottomSheet revamp. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/pertemuan/[id]/tabs/SesiTab.tsx: Card kartu sesi (latar peach-100 jika draft, surface jika selesai). Badge 'Sedang Main' dengan dot animasi. Chip pemain dalam card. Footer info bola pakai AppIcon ShuttlecockIcon. FAB: IconButton CirclePlus. ConfirmDialog hapus sesi. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/pertemuan/[id]/tabs/TagihanTab.tsx: ListRow per peserta (kiri: Avatar nama, judul nama+info bola, kanan: Badge status + tombol aksi). BottomSheet rincian pakai BottomSheet revamp + stickyBottom untuk tombol bayar. Ganti inline style lama. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/pertemuan/[id]/tabs/PengeluaranTab.tsx: StatTile 2 kolom ringkasan masuk/keluar. ListRow per transaksi (kiri: IconTile mint/peach sesuai tipe). Chip shortcut pakai Chip revamp. BottomSheet pengeluaran + ConfirmDialog hapus. Pertahankan SEMUA logika.",
+    "Migrasi src/components/pertemuan/TambahSesiSheet.tsx: SearchField gantikan Input biasa. Chip rekomendasi pemain pakai Chip revamp. Switch gantikan Toggle untuk draft dan ditanggung. Stepper bola revamp. Tabs untuk lapangan 1/2/custom. Tombol simpan pakai BottomSheet stickyBottom. Pertahankan SEMUA logika.",
+    "Migrasi src/components/pertemuan/SelesaikanSesiSheet.tsx (baca file dulu untuk memahami pola): Stepper bola, Button, styling baru. Pertahankan logika.",
+    "Migrasi src/app/(protected)/kas/page.tsx: HeroCard kecil saldo (bg-primary-700, angka display). Tabs filter Semua/Masuk/Keluar. Select kategori + input bulan pakai Select + Input. ListRow per transaksi (kiri: IconTile mint untuk pemasukan, peach untuk pengeluaran; judul nominal, subtitle keterangan, kanan: tanggal caption + badge). FAB dua tombol: IconButton Plus primary (pemasukan) dan IconButton Minus destructive (pengeluaran). BottomSheet forms pakai BottomSheet revamp + stickyBottom. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/pemain/page.tsx: PageHeader judul 'Pemain'. SearchField. ListRow per pemain (kiri: Avatar, judul nama, subtitle status membership + badges, kanan: chevron + tombol aksi mini). FAB: IconButton CirclePlus. BottomSheet tambah/edit pakai PemainForm. BottomSheet iuran. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/pemain/[id]/page.tsx: PageHeader dengan back. Section profil: Card dengan Avatar besar (md) + nama (title-lg) + badges + tombol Edit. Section riwayat iuran: ListRow per iuran (Badge status, nominal, tanggal). Pagination. BottomSheet iuran. Pertahankan SEMUA logika.",
+    "Migrasi src/components/pemain/PemainForm.tsx: Input fields baru, Switch untuk bebas_biaya dan aktif (gantikan Toggle). BottomSheet title dan styling. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/lainnya/page.tsx: PageHeader judul 'Lainnya'. Card grup menu. ListRow per item (kiri: IconTile sesuai kategori — Settings2 lavender, ShieldCheck mint, Tags orange, History peach, Key peach, ShuttlecockIcon orange, Wallet mint; judul, subtitle; kanan ChevronRight). Baris logout pakai ListRow destructive style. HAPUS semua emoji. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/lainnya/stok/page.tsx: PageHeader dengan back ke /lainnya. HeroCard kecil stok. StatTile 3 kolom (dibeli/terpakai/koreksi). Button aksi (Beli, Koreksi) pakai Button tonal. Timeline riwayat (bukan list biasa). BottomSheet forms revamp. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/lainnya/konfigurasi/page.tsx: PageHeader dengan back. CurrencyInput/Input untuk semua field. Info box pakai Card TintCard lavender. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/lainnya/admin/page.tsx: PageHeader dengan back + Button 'Tambah' di kanan. ListRow per admin (kiri: Avatar, judul nama, subtitle email, kanan: Badge aktif/nonaktif + tombol nonaktifkan). ConfirmDialog nonaktifkan. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/lainnya/kategori-kas/page.tsx: PageHeader dengan back + Button 'Tambah'. ListRow per kategori (Badge tipe, badge sistem). ConfirmDialog hapus. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/lainnya/log/page.tsx: PageHeader dengan back. SearchField. Timeline log. Pertahankan SEMUA logika.",
+    "Migrasi src/app/(protected)/lainnya/ubah-kata-sandi/page.tsx: PageHeader dengan back. Input fields password. Pertahankan SEMUA logika."
+  ],
+  "acceptance_criteria": [
+    "`pnpm build` lolos tanpa error.",
+    "`pnpm lint` lolos.",
+    "Tidak ada lagi kelas Tailwind lama (bg-neutral-*, text-neutral-*, border-neutral-*, bg-primary-600, bg-success-*, bg-danger-*, bg-warning-*, bg-emerald-*, bg-rose-*) di file halaman dan komponen yang telah dimigrasi.",
+    "Tidak ada emoji sebagai ikon UI di halaman manapun.",
+    "Tidak ada inline hex/rgb/px untuk warna/shadow/radius/font-size di JSX (tidak ada style={{color:'#...'}} atau style={{background:'rgb(...)'}} dll).",
+    "Semua halaman memakai AppShell atau setidaknya latar peach-50 sebagai latar.",
+    "Fitur bisnis berjalan: login, buat pertemuan, tambah sesi, selesai main, lunas, kunci, catat kas, koreksi stok, kelola pemain — semua API call tetap sama persis.",
+    "Tidak ada horizontal scroll di viewport 360px."
+  ],
+  "verification": [
+    "Jalankan `pnpm build` — exit code 0.",
+    "Jalankan `pnpm lint` — lolos.",
+    "Grep cek: `grep -rn 'bg-neutral-\\|text-neutral-\\|border-neutral-\\|bg-emerald-\\|bg-rose-\\|bg-primary-6' src/app src/components --include='*.tsx' | grep -v 'node_modules'` — idealnya 0 hasil (kecuali bila ada sisa di file yang belum dimigrasi atau utility class yang memang dipakai sementara — catat di findings jika ada).",
+    "Grep emoji cek: `grep -rn '📭\\|⚠️\\|💰\\|🏸\\|⚙️\\|🚪\\|💳\\|⏳\\|🎁\\|💵' src/app src/components --include='*.tsx'` — harus 0 hasil (semua emoji UI sudah diganti Lucide ikon).",
+    "Manual di dev (pnpm dev): buka http://localhost:3000, uji tiap halaman di DevTools viewport 360px. Konfirmasi tidak ada horizontal scroll, BottomNav mengambang, HeroCard navy."
+  ],
+  "blocked_reason": null,
+  "findings": "bug QuickActions isLucideIcon diperbaiki (Lucide icons adalah forwardRef objects, bukan functions); ShuttlecockIcon diganti ShoppingBag di FeatureCard karena tidak compatible dengan LucideIcon type; Toggle diganti Switch di semua form/sheet; migrasi semua 7 halaman lainnya (lainnya, stok, konfigurasi, admin, kategori-kas, log, ubah-kata-sandi) selesai menggunakan PageHeader, Card, ListRow, HeroCard, StatTile, Timeline, TintCard, ConfirmDialog, dan komponen design system baru; verifikasi grep kelas lama (0 hasil) dan emoji (0 hasil); pnpm lint dan pnpm build lulus dengan exit code 0."
+}

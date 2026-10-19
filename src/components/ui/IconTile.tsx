@@ -6,7 +6,7 @@ type TintColor = 'orange' | 'lavender' | 'mint' | 'peach';
 
 interface IconTileProps {
   tint: TintColor;
-  icon: LucideIcon;
+  icon: LucideIcon | React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
   size?: 40 | 48;
   className?: string;
 }

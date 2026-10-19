@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -8,6 +9,10 @@ import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { Chip } from '@/components/ui/Chip';
+import { StatTile } from '@/components/ui/StatTile';
+import { ListRow } from '@/components/ui/ListRow';
+import { IconTile } from '@/components/ui/IconTile';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { formatRupiah } from '@/lib/money';
 
 interface Transaksi {
@@ -248,80 +253,66 @@ export function PengeluaranTab({ pertemuanId, terkunci }: PengeluaranTabProps) {
 
   if (loading && list.length === 0) {
     return (
-      <div className="p-4">
+      <div className="px-5 py-4">
         <SkeletonList count={3} />
       </div>
     );
   }
 
   return (
-    <div className="p-4">
+    <div className="px-5 py-4">
       {/* Ringkasan Arus Kas Pertemuan */}
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5">
-          <p className="text-[11px] font-medium text-emerald-800">Total Masuk</p>
-          <p className="text-sm font-bold text-emerald-700 mt-0.5">
-            {formatRupiah(totalMasuk)}
-          </p>
-        </div>
-        <div className="bg-rose-50/70 border border-rose-200/80 rounded-xl p-2.5">
-          <p className="text-[11px] font-medium text-rose-800">Total Keluar</p>
-          <p className="text-sm font-bold text-rose-700 mt-0.5">
-            {formatRupiah(totalKeluar)}
-          </p>
-        </div>
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <StatTile
+          label="Total Masuk"
+          value={formatRupiah(totalMasuk)}
+        />
+        <StatTile
+          label="Total Keluar"
+          value={formatRupiah(totalKeluar)}
+        />
       </div>
 
       {list.length === 0 && (
         <EmptyState
           message="Belum ada transaksi"
-          hint={!terkunci ? "Gunakan tombol di bawah untuk menambah pengeluaran" : undefined}
+          hint={!terkunci ? 'Gunakan tombol di bawah untuk menambah pengeluaran' : undefined}
         />
       )}
 
       {/* Transaction List */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0 rounded-xl overflow-hidden border border-line">
         {list.map((t) => (
-          <div
+          <ListRow
             key={t.id}
-            className="bg-white rounded-xl border border-neutral-200 shadow-sm p-3.5 transition-all"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-neutral-900 text-sm">
-                    {formatRupiah(t.nominal)}
-                  </p>
-                  <Badge
-                    label={t.tipe === 'pemasukan' ? 'Masuk' : 'Keluar'}
-                    variant={t.tipe === 'pemasukan' ? 'success' : 'danger'}
-                  />
-                </div>
-                <p className="text-xs text-neutral-600 mt-1 font-medium">
-                  {formatKeterangan(t.keterangan)}
-                </p>
-                {t.kategori_nama && (
-                  <p className="text-[11px] text-neutral-400 mt-0.5">
-                    Kategori: {t.kategori_nama}
-                  </p>
+            left={
+              <IconTile
+                tint={t.tipe === 'pemasukan' ? 'mint' : 'peach'}
+                icon={Trash2}
+                size={40}
+              />
+            }
+            title={formatRupiah(t.nominal)}
+            subtitle={`${formatKeterangan(t.keterangan)}${t.kategori_nama ? ` · ${t.kategori_nama}` : ''}`}
+            right={
+              <div className="flex items-center gap-2">
+                <Badge
+                  label={t.tipe === 'pemasukan' ? 'Masuk' : 'Keluar'}
+                  variant={t.tipe === 'pemasukan' ? 'success' : 'danger'}
+                />
+                {t.dapat_diubah && !terkunci && (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteId(t.id)}
+                    className="text-ink-400 hover:text-danger p-1 transition-colors"
+                    aria-label="Hapus pengeluaran"
+                  >
+                    <Trash2 size={16} strokeWidth={1.75} />
+                  </button>
                 )}
               </div>
-
-              {/* Delete action for manual expenses */}
-              {t.dapat_diubah && !terkunci && (
-                <button
-                  type="button"
-                  onClick={() => setDeleteId(t.id)}
-                  className="text-neutral-400 hover:text-danger-600 p-1 text-xs transition-colors shrink-0"
-                  aria-label="Hapus pengeluaran"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          </div>
+            }
+          />
         ))}
       </div>
 
@@ -330,7 +321,7 @@ export function PengeluaranTab({ pertemuanId, terkunci }: PengeluaranTabProps) {
         <div className="mt-4 pt-1">
           <Button
             variant="secondary"
-            className="w-full h-11 font-medium"
+            className="w-full"
             onClick={openPengeluaranSheet}
           >
             + Tambah Pengeluaran
@@ -347,43 +338,42 @@ export function PengeluaranTab({ pertemuanId, terkunci }: PengeluaranTabProps) {
         <div className="flex flex-col gap-4">
           {/* Shortcuts */}
           <div>
-            <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+            <p className="text-caption font-semibold text-ink-600 uppercase tracking-wider mb-2">
               Shortcut Cepat
             </p>
             <div className="flex flex-wrap gap-1.5">
               <Chip
                 size="sm"
-                label="🏸 Sewa Lapangan"
+                label="Sewa Lapangan"
                 selected={activeShortcut === 'sewa'}
                 onSelect={() => applyShortcut('sewa')}
               />
               <Chip
                 size="sm"
-                label="⏱️ Tambah Jam Lapangan"
+                label="Tambah Jam Lapangan"
                 selected={activeShortcut === 'tambah_jam'}
                 onSelect={() => applyShortcut('tambah_jam')}
               />
               <Chip
                 size="sm"
-                label="🥤 Air Minum"
+                label="Air Minum"
                 selected={activeShortcut === 'minum'}
                 onSelect={() => applyShortcut('minum')}
               />
               <Chip
                 size="sm"
-                label="🧰 Kok / Bola"
+                label="Kok / Bola"
                 selected={activeShortcut === 'kok'}
                 onSelect={() => applyShortcut('kok')}
               />
               <Chip
                 size="sm"
-                label="📝 Lainnya"
+                label="Lainnya"
                 selected={activeShortcut === 'lainnya'}
                 onSelect={() => applyShortcut('lainnya')}
               />
             </div>
           </div>
-
 
           {/* Nominal Input */}
           <Input
@@ -400,16 +390,16 @@ export function PengeluaranTab({ pertemuanId, terkunci }: PengeluaranTabProps) {
             label="Keterangan"
             value={keterangan}
             onChange={(e) => setKeterangan(e.target.value)}
-            placeholder="Contoh: Sewa Lapangan 1 & 2, Tambah 1 Jam..."
+            placeholder="Contoh: Sewa Lapangan 1 &amp; 2, Tambah 1 Jam..."
           />
 
           {sheetError && (
-            <p className="text-sm text-danger-600 bg-danger-50 border border-danger-200 rounded-lg p-2.5" role="alert">
+            <p className="text-body text-danger bg-danger-tonal border border-danger/20 rounded-lg p-2.5" role="alert">
               {sheetError}
             </p>
           )}
 
-          <div className="flex gap-3 pt-2 pb-4">
+          <div className="flex gap-3 pt-2">
             <Button
               variant="secondary"
               onClick={() => setSheetOpen(false)}
@@ -430,34 +420,16 @@ export function PengeluaranTab({ pertemuanId, terkunci }: PengeluaranTabProps) {
       </BottomSheet>
 
       {/* Delete confirmation dialog */}
-      <BottomSheet
+      <ConfirmDialog
         open={!!deleteId}
         onClose={() => setDeleteId(null)}
+        onConfirm={handleDeleteKas}
         title="Hapus Pengeluaran"
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-neutral-600">
-            Apakah Anda yakin ingin menghapus catatan pengeluaran ini dari kas pertemuan?
-          </p>
-          <div className="flex gap-3 pt-2 pb-4">
-            <Button
-              variant="secondary"
-              onClick={() => setDeleteId(null)}
-              className="flex-1"
-            >
-              Batal
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDeleteKas}
-              loading={deleteLoading}
-              className="flex-1"
-            >
-              Hapus
-            </Button>
-          </div>
-        </div>
-      </BottomSheet>
+        description="Apakah Anda yakin ingin menghapus catatan pengeluaran ini dari kas pertemuan?"
+        confirmLabel="Hapus"
+        destructive
+        loading={deleteLoading}
+      />
     </div>
   );
 }

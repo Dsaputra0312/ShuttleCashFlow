@@ -2,6 +2,7 @@
 
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { CalendarDays, CirclePlus } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SkeletonList } from '@/components/ui/Skeleton';
@@ -9,9 +10,13 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
-
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { ListRow } from '@/components/ui/ListRow';
+import { IconTile } from '@/components/ui/IconTile';
+import { IconButton } from '@/components/ui/IconButton';
+import { Chip } from '@/components/ui/Chip';
 
 interface Pertemuan {
   id: string;
@@ -125,81 +130,75 @@ function PertemuanPageInner() {
   };
 
   return (
-    <div className="p-4 pb-28">
-      <h1 className="text-xl font-bold text-neutral-900 mb-4">Pertemuan</h1>
+    <div>
+      <PageHeader title="Pertemuan" />
 
-      <div className="flex flex-col gap-3">
-        {loading ? (
-          <SkeletonList count={3} />
-        ) : error ? (
-          <ErrorState message={error} onRetry={() => fetchList(page)} />
-        ) : list.length === 0 ? (
-          <EmptyState
-            message="Belum ada pertemuan"
-            hint="Tekan tombol + untuk membuat pertemuan baru"
-          />
-        ) : (
-          list.map((pt) => (
-            <button
-              key={pt.id}
-              type="button"
-              onClick={() => router.push(`/pertemuan/${pt.id}`)}
-              className="w-full text-left bg-white rounded-xl border border-neutral-200 shadow-sm p-4 min-h-[44px] active:bg-neutral-50"
+      <div className="px-5 py-4">
+        <div className="flex flex-col gap-2">
+          {loading ? (
+            <SkeletonList count={3} />
+          ) : error ? (
+            <ErrorState message={error} onRetry={() => fetchList(page)} />
+          ) : list.length === 0 ? (
+            <EmptyState
+              message="Belum ada pertemuan"
+              hint="Tekan tombol + untuk membuat pertemuan baru"
+            />
+          ) : (
+            list.map((pt) => (
+              <ListRow
+                key={pt.id}
+                left={<IconTile tint="orange" icon={CalendarDays} size={40} />}
+                title={formatTanggal(pt.tanggal)}
+                subtitle={`${pt.jumlah_peserta ?? 0} pemain`}
+                right={
+                  <Badge
+                    label={pt.terkunci ? 'Terkunci' : 'Aktif'}
+                    variant={pt.terkunci ? 'terkunci' : 'aktif'}
+                  />
+                }
+                onPress={() => router.push(`/pertemuan/${pt.id}`)}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Pagination */}
+        {pagination && pagination.total_pages > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-neutral-900">
-                    {formatTanggal(pt.tanggal)}
-                  </p>
-                  <p className="text-sm text-neutral-500 mt-0.5">
-                    {pt.jumlah_peserta ?? 0} pemain
-                  </p>
-                </div>
-                <Badge
-                  label={pt.terkunci ? 'Terkunci' : 'Aktif'}
-                  variant={pt.terkunci ? 'default' : 'success'}
-                />
-              </div>
-            </button>
-          ))
+              Sebelumnya
+            </Button>
+            <span className="text-body text-ink-400">
+              {page} / {pagination.total_pages}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page >= pagination.total_pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Berikutnya
+            </Button>
+          </div>
         )}
       </div>
 
-      {/* Pagination */}
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Sebelumnya
-          </Button>
-          <span className="text-sm text-neutral-500">
-            {page} / {pagination.total_pages}
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page >= pagination.total_pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Berikutnya
-          </Button>
-        </div>
-      )}
-
       {/* FAB */}
-      <button
-        type="button"
+      <IconButton
+        icon={CirclePlus}
+        label="Buat pertemuan baru"
+        variant="filled"
+        size="lg"
         onClick={handleOpenCreateModal}
         disabled={creating}
-        aria-label="Buat pertemuan baru"
-        className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg active:bg-primary-700 disabled:opacity-60"
-      >
-        <span className="text-2xl leading-none" aria-hidden="true">+</span>
-      </button>
+        className="fixed bottom-[120px] right-4 z-30 shadow-float"
+      />
 
       {/* Modal Buat Pertemuan */}
       <BottomSheet
@@ -218,46 +217,31 @@ function PertemuanPageInner() {
             />
             {/* Quick shortcuts */}
             <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setSelectedTanggal(getDateString(-1))}
-                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                  selectedTanggal === getDateString(-1)
-                    ? 'bg-primary-50 border-primary-500 text-primary-700 font-medium'
-                    : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
-                }`}
-              >
-                Kemarin
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedTanggal(getDateString(0))}
-                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                  selectedTanggal === getDateString(0)
-                    ? 'bg-primary-50 border-primary-500 text-primary-700 font-medium'
-                    : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
-                }`}
-              >
-                Hari Ini
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedTanggal(getDateString(1))}
-                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                  selectedTanggal === getDateString(1)
-                    ? 'bg-primary-50 border-primary-500 text-primary-700 font-medium'
-                    : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'
-                }`}
-              >
-                Besok
-              </button>
+              <Chip
+                size="sm"
+                label="Kemarin"
+                selected={selectedTanggal === getDateString(-1)}
+                onSelect={() => setSelectedTanggal(getDateString(-1))}
+              />
+              <Chip
+                size="sm"
+                label="Hari Ini"
+                selected={selectedTanggal === getDateString(0)}
+                onSelect={() => setSelectedTanggal(getDateString(0))}
+              />
+              <Chip
+                size="sm"
+                label="Besok"
+                selected={selectedTanggal === getDateString(1)}
+                onSelect={() => setSelectedTanggal(getDateString(1))}
+              />
             </div>
           </div>
 
           {/* Formatted date preview */}
-          <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between">
-            <span className="text-xs text-neutral-500">Pilihan:</span>
-            <span className="text-sm font-semibold text-neutral-900">
+          <div className="p-3 bg-peach-100 rounded-xl border border-line flex items-center justify-between">
+            <span className="text-caption text-ink-600">Pilihan:</span>
+            <span className="text-body font-medium text-ink-900">
               {formatTanggal(selectedTanggal)}
             </span>
           </div>
@@ -290,7 +274,7 @@ function PertemuanPageInner() {
 
 export default function PertemuanPage() {
   return (
-    <Suspense fallback={<div className="p-4 text-center text-sm text-neutral-500">Memuat...</div>}>
+    <Suspense fallback={<div className="px-5 py-4 text-center text-body text-ink-400">Memuat...</div>}>
       <PertemuanPageInner />
     </Suspense>
   );

@@ -40,7 +40,7 @@ export function PageHeader({ title, onBack, action, className = '' }: PageHeader
         .join(' ')}
     >
       {/* Left: back button */}
-      <div className="w-10 shrink-0">
+      <div className="min-w-[40px] shrink-0">
         {onBack !== undefined && onBack !== false && (
           <button
             type="button"
@@ -59,7 +59,7 @@ export function PageHeader({ title, onBack, action, className = '' }: PageHeader
       </h1>
 
       {/* Right: action */}
-      <div className="w-10 shrink-0 flex justify-end">
+      <div className="min-w-[40px] shrink-0 flex justify-end">
         {action ?? null}
       </div>
     </header>

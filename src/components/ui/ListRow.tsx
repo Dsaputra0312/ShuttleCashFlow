@@ -1,6 +1,7 @@
 import React from 'react';
 
 interface ListRowProps {
+  id?: string;
   /** Slot kiri: Avatar, IconTile, atau elemen lain */
   left?: React.ReactNode;
   title: string;
@@ -9,6 +10,7 @@ interface ListRowProps {
   right?: React.ReactNode;
   onPress?: () => void;
   className?: string;
+  destructive?: boolean;
 }
 
 /**
@@ -16,15 +18,18 @@ interface ListRowProps {
  * Antar grup ListRow biasanya dibungkus Card bg-surface.
  */
 export function ListRow({
+  id,
   left,
   title,
   subtitle,
   right,
   onPress,
   className = '',
+  destructive = false,
 }: ListRowProps) {
   return (
     <div
+      id={id}
       onClick={onPress}
       role={onPress ? 'button' : undefined}
       tabIndex={onPress ? 0 : undefined}
@@ -52,7 +57,14 @@ export function ListRow({
       {left && <div className="shrink-0">{left}</div>}
 
       <div className="flex-1 min-w-0">
-        <p className="text-heading font-heading text-ink-900 truncate">{title}</p>
+        <p
+          className={[
+            'text-heading font-heading truncate',
+            destructive ? 'text-danger' : 'text-ink-900',
+          ].join(' ')}
+        >
+          {title}
+        </p>
         {subtitle && (
           <p className="text-caption text-ink-600 mt-0.5 truncate">{subtitle}</p>
         )}

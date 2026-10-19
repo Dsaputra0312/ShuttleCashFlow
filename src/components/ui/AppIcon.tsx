@@ -2,7 +2,7 @@ import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 
 interface AppIconProps {
-  icon: LucideIcon;
+  icon: LucideIcon | React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
   size?: 'sm' | 'md';
   className?: string;
   strokeWidth?: number;
