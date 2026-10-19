@@ -15,8 +15,7 @@ interface PageHeaderProps {
 }
 
 /**
- * Sticky page header with optional back button, centred title, and right-side action slot.
- * Min-height 56px. Background surface, bottom border line.
+ * Modern seamless sticky page header with soft blur, rounded back button, and balanced spacing.
  */
 export function PageHeader({ title, onBack, action, className = '' }: PageHeaderProps) {
   const router = useRouter();
@@ -29,37 +28,39 @@ export function PageHeader({ title, onBack, action, className = '' }: PageHeader
     }
   };
 
+  const hasBack = onBack !== undefined && onBack !== false;
+
   return (
     <header
       className={[
-        'sticky top-0 z-20 flex min-h-[56px] items-center gap-2',
-        'bg-surface border-b border-line px-4',
+        'sticky top-0 z-20 flex min-h-[56px] items-center gap-3',
+        'bg-peach-50/90 backdrop-blur-md border-b border-line/50 px-4 transition-colors',
         className,
       ]
         .filter(Boolean)
         .join(' ')}
     >
       {/* Left: back button */}
-      <div className="min-w-[40px] shrink-0">
-        {onBack !== undefined && onBack !== false && (
+      <div className="min-w-[40px] shrink-0 flex items-center">
+        {hasBack && (
           <button
             type="button"
             onClick={handleBack}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-ink-900 hover:bg-peach-100 active:bg-peach-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface text-ink-900 shadow-xs border border-line/80 hover:bg-peach-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             aria-label="Kembali"
           >
-            <AppIcon icon={ChevronLeft} size="md" />
+            <AppIcon icon={ChevronLeft} size="sm" />
           </button>
         )}
       </div>
 
       {/* Center: title */}
-      <h1 className="flex-1 text-center text-heading font-heading text-ink-900 truncate">
+      <h1 className="flex-1 text-center font-heading font-bold text-[17px] text-ink-900 truncate tracking-tight">
         {title}
       </h1>
 
-      {/* Right: action */}
-      <div className="min-w-[40px] shrink-0 flex justify-end">
+      {/* Right: action slot */}
+      <div className="min-w-[40px] shrink-0 flex items-center justify-end">
         {action ?? null}
       </div>
     </header>

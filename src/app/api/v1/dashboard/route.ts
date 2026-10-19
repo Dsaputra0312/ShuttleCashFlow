@@ -202,6 +202,96 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    // (g) Data grafik arus kas (Pemasukan vs Pengeluaran)
+    let grafik_kas: { label: string; pemasukan: number; pengeluaran: number }[] = [];
+
+    if (filter === 'bulanan') {
+      const allTxMonth = await dbClient
+        .select({
+          nominal: transaksi_kas.nominal,
+          tipe: transaksi_kas.tipe,
+          dibuat_pada: transaksi_kas.dibuat_pada,
+        })
+        .from(transaksi_kas)
+        .where(
+          and(
+            eq(transaksi_kas.grup_id, grupId),
+            gte(transaksi_kas.dibuat_pada, start),
+            lte(transaksi_kas.dibuat_pada, end)
+          )
+        );
+
+      const weeks = [
+        { label: 'Mgg 1', start: 1, end: 7, pemasukan: 0, pengeluaran: 0 },
+        { label: 'Mgg 2', start: 8, end: 14, pemasukan: 0, pengeluaran: 0 },
+        { label: 'Mgg 3', start: 15, end: 21, pemasukan: 0, pengeluaran: 0 },
+        { label: 'Mgg 4+', start: 22, end: 31, pemasukan: 0, pengeluaran: 0 },
+      ];
+
+      for (const tx of allTxMonth) {
+        if (!tx.dibuat_pada) continue;
+        const txDate = new Date(tx.dibuat_pada);
+        const day = txDate.getDate();
+        const targetWeek = weeks.find((w) => day >= w.start && day <= w.end) ?? weeks[3];
+        if (tx.tipe === 'pemasukan') {
+          targetWeek.pemasukan += tx.nominal;
+        } else {
+          targetWeek.pengeluaran += tx.nominal;
+        }
+      }
+
+      grafik_kas = weeks.map((w) => ({
+        label: w.label,
+        pemasukan: w.pemasukan,
+        pengeluaran: w.pengeluaran,
+      }));
+    } else {
+      // Harian: 7 hari terakhir hingga `tanggal`
+      const endDateObj = new Date(tanggal + 'T23:59:59+07:00');
+      const startDateObj = new Date(endDateObj.getTime() - 6 * 24 * 60 * 60 * 1000);
+      startDateObj.setHours(0, 0, 0, 0);
+
+      const allTx7Days = await dbClient
+        .select({
+          nominal: transaksi_kas.nominal,
+          tipe: transaksi_kas.tipe,
+          dibuat_pada: transaksi_kas.dibuat_pada,
+        })
+        .from(transaksi_kas)
+        .where(
+          and(
+            eq(transaksi_kas.grup_id, grupId),
+            gte(transaksi_kas.dibuat_pada, startDateObj),
+            lte(transaksi_kas.dibuat_pada, endDateObj)
+          )
+        );
+
+      const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+      const daysMap: { [dateKey: string]: { label: string; pemasukan: number; pengeluaran: number } } = {};
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(endDateObj.getTime() - i * 24 * 60 * 60 * 1000);
+        const dateKey = d.toISOString().slice(0, 10);
+        const label = `${dayNames[d.getDay()]} ${d.getDate()}`;
+        daysMap[dateKey] = { label, pemasukan: 0, pengeluaran: 0 };
+      }
+
+      for (const tx of allTx7Days) {
+        if (!tx.dibuat_pada) continue;
+        const txDate = new Date(tx.dibuat_pada);
+        const dateKey = txDate.toISOString().slice(0, 10);
+        if (daysMap[dateKey]) {
+          if (tx.tipe === 'pemasukan') {
+            daysMap[dateKey].pemasukan += tx.nominal;
+          } else {
+            daysMap[dateKey].pengeluaran += tx.nominal;
+          }
+        }
+      }
+
+      grafik_kas = Object.values(daysMap);
+    }
+
     return successResponse({
       saldo_kas,
       stok_bola,
@@ -210,6 +300,7 @@ export async function GET(request: NextRequest) {
       total_pengeluaran,
       filter,
       tanggal,
+      grafik_kas,
       transaksi_terbaru,
       ringkasan_pertemuan_terakhir,
     });

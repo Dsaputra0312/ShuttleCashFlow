@@ -2,18 +2,19 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarPlus, Wallet, CalendarDays, Users, ShoppingBag } from 'lucide-react';
+import { CalendarPlus, Wallet } from 'lucide-react';
 import { formatRupiah } from '@/lib/money';
 import { HeroCard } from '@/components/ui/HeroCard';
 import { SelectorCard } from '@/components/ui/SelectorCard';
 import { QuickActions } from '@/components/ui/QuickActions';
-import { FeatureCard } from '@/components/ui/FeatureCard';
 import { Section } from '@/components/ui/Section';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Timeline } from '@/components/ui/Timeline';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Tabs } from '@/components/ui/Tabs';
 import { Badge } from '@/components/ui/Badge';
+import { StatTile } from '@/components/ui/StatTile';
+import { BarChart } from '@/components/ui/BarChart';
 import { ShuttlecockIcon } from '@/components/ui/ShuttlecockIcon';
 
 type Filter = 'harian' | 'bulanan';
@@ -34,6 +35,12 @@ interface RingkasanPertemuan {
   total_tagihan: number;
 }
 
+interface BarChartDataItem {
+  label: string;
+  pemasukan: number;
+  pengeluaran: number;
+}
+
 interface DashboardData {
   saldo_kas: number;
   stok_bola: number;
@@ -42,6 +49,7 @@ interface DashboardData {
   total_pengeluaran: number;
   filter: Filter;
   tanggal: string;
+  grafik_kas?: BarChartDataItem[];
   transaksi_terbaru: TransaksiItem[];
   ringkasan_pertemuan_terakhir: RingkasanPertemuan | null;
 }
@@ -151,37 +159,6 @@ export default function BerandaPage() {
     },
   ];
 
-  const featureItems: Parameters<typeof FeatureCard>[0]['items'] = [
-    {
-      tint: 'orange',
-      icon: CalendarDays,
-      label: 'Pertemuan',
-      description: 'Kelola sesi main',
-      href: '/pertemuan',
-    },
-    {
-      tint: 'lavender',
-      icon: Users,
-      label: 'Pemain',
-      description: 'Data anggota grup',
-      href: '/pemain',
-    },
-    {
-      tint: 'mint',
-      icon: Wallet,
-      label: 'Kas',
-      description: 'Pemasukan & pengeluaran',
-      href: '/kas',
-    },
-    {
-      tint: 'peach',
-      icon: ShoppingBag,
-      label: 'Stok Bola',
-      description: 'Kelola shuttlecock',
-      href: '/lainnya/stok',
-    },
-  ];
-
   const filterPeriodeLabel =
     filter === 'harian' && tanggal
       ? formatTanggalPendek(tanggal)
@@ -204,6 +181,24 @@ export default function BerandaPage() {
     ),
     time: formatWaktu(t.dibuat_pada),
   }));
+
+  const defaultChartData =
+    filter === 'bulanan'
+      ? [
+          { label: 'Mgg 1', pemasukan: 0, pengeluaran: 0 },
+          { label: 'Mgg 2', pemasukan: 0, pengeluaran: 0 },
+          { label: 'Mgg 3', pemasukan: 0, pengeluaran: 0 },
+          { label: 'Mgg 4+', pemasukan: 0, pengeluaran: 0 },
+        ]
+      : [
+          { label: 'H-6', pemasukan: 0, pengeluaran: 0 },
+          { label: 'H-5', pemasukan: 0, pengeluaran: 0 },
+          { label: 'H-4', pemasukan: 0, pengeluaran: 0 },
+          { label: 'H-3', pemasukan: 0, pengeluaran: 0 },
+          { label: 'H-2', pemasukan: 0, pengeluaran: 0 },
+          { label: 'Kemarin', pemasukan: 0, pengeluaran: 0 },
+          { label: 'Hari ini', pemasukan: 0, pengeluaran: 0 },
+        ];
 
   return (
     <div>
@@ -278,14 +273,68 @@ export default function BerandaPage() {
         )}
       </Section>
 
-      {/* Quick Actions */}
+      {/* Ringkasan Arus Kas Masuk vs Keluar Periode Ini */}
       <Section className="pt-0">
-        <QuickActions actions={quickActions} />
+        <div className="grid grid-cols-2 gap-3">
+          <StatTile
+            label={`Pemasukan (${filter === 'harian' ? 'Hari Ini' : 'Bulan Ini'})`}
+            value={`+${formatRupiah(data?.total_pemasukan ?? 0)}`}
+            hint="Total uang masuk"
+            className="!border-emerald-200/60 !bg-emerald-50/40 text-emerald-700"
+          />
+          <StatTile
+            label={`Pengeluaran (${filter === 'harian' ? 'Hari Ini' : 'Bulan Ini'})`}
+            value={`-${formatRupiah(data?.total_pengeluaran ?? 0)}`}
+            hint="Total uang keluar"
+            className="!border-pink-200/60 !bg-pink-50/40 text-danger"
+          />
+        </div>
       </Section>
 
-      {/* Feature Cards 2×2 */}
+      {/* Visual BarChart Arus Kas */}
       <Section className="pt-0">
-        <FeatureCard items={featureItems} />
+        <div className="bg-surface rounded-2xl border border-line/80 shadow-xs p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-body font-bold text-ink-900">Grafik Arus Kas</h2>
+              <p className="text-caption text-ink-500">
+                {filter === 'bulanan' ? 'Perbandingan per minggu' : 'Tren 7 hari terakhir'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-caption font-medium">
+              <span className="flex items-center gap-1.5 text-primary-700">
+                <span className="w-2.5 h-2.5 rounded-sm bg-primary-700" />
+                Masuk
+              </span>
+              <span className="flex items-center gap-1.5 text-pink-500">
+                <span className="w-2.5 h-2.5 rounded-sm bg-pink-500" />
+                Keluar
+              </span>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="h-[210px] w-full rounded-xl bg-peach-100 animate-pulse flex items-center justify-center text-ink-400 text-caption">
+              Memuat grafik...
+            </div>
+          ) : (
+            <div className="pt-2">
+              <BarChart
+                data={
+                  data?.grafik_kas && data.grafik_kas.length > 0
+                    ? data.grafik_kas
+                    : defaultChartData
+                }
+                height={210}
+              />
+            </div>
+          )}
+        </div>
+      </Section>
+
+      {/* Quick Actions (Aksi Cepat) */}
+      <Section className="pt-0">
+        <QuickActions actions={quickActions} />
       </Section>
 
       {/* Aktivitas Terbaru */}

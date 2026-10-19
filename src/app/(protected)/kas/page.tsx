@@ -17,6 +17,7 @@ import { Tabs } from '@/components/ui/Tabs';
 import { ListRow } from '@/components/ui/ListRow';
 import { IconTile } from '@/components/ui/IconTile';
 import { IconButton } from '@/components/ui/IconButton';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { formatRupiah } from '@/lib/money';
 
 interface Transaksi {
@@ -72,7 +73,7 @@ function KasPageInner() {
   // Add sheet (Normal Pemasukan / Pengeluaran)
   const [addOpen, setAddOpen] = useState(false);
   const [addTipe, setAddTipe] = useState<'pemasukan' | 'pengeluaran'>('pemasukan');
-  const [addNominal, setAddNominal] = useState('');
+  const [addNominal, setAddNominal] = useState<number>(0);
   const [addKategori, setAddKategori] = useState('');
   const [addKeterangan, setAddKeterangan] = useState('');
   const [addLoading, setAddLoading] = useState(false);
@@ -83,11 +84,11 @@ function KasPageInner() {
   const [penyesuaianMode, setPenyesuaianMode] = useState<'set_saldo' | 'tambah_kurang'>('set_saldo');
 
   // Mode 1: Atur Saldo Fisik (Stok/Saldo Opname)
-  const [targetSaldoInput, setTargetSaldoInput] = useState('');
+  const [targetSaldoInput, setTargetSaldoInput] = useState<number>(0);
 
   // Mode 2: Tambah / Kurang Kas
   const [operasiTipe, setOperasiTipe] = useState<'+' | '-'>('-');
-  const [adjNominalInput, setAdjNominalInput] = useState('');
+  const [adjNominalInput, setAdjNominalInput] = useState<number>(0);
 
   const [penyesuaianAlasan, setPenyesuaianAlasan] = useState('');
   const [penyesuaianLoading, setPenyesuaianLoading] = useState(false);
@@ -174,9 +175,9 @@ function KasPageInner() {
   const openPenyesuaianModal = useCallback(() => {
     const current = saldoInfo?.saldo_saat_ini ?? 0;
     setPenyesuaianMode('set_saldo');
-    setTargetSaldoInput(current > 0 ? String(current) : '0');
+    setTargetSaldoInput(current > 0 ? current : 0);
     setOperasiTipe('-');
-    setAdjNominalInput('');
+    setAdjNominalInput(0);
     setPenyesuaianAlasan('');
     setPenyesuaianError(null);
     setPenyesuaianOpen(true);
@@ -199,7 +200,7 @@ function KasPageInner() {
 
   const openAdd = (tipe: 'pemasukan' | 'pengeluaran') => {
     setAddTipe(tipe);
-    setAddNominal('');
+    setAddNominal(0);
     setAddKategori('');
     setAddKeterangan('');
     setAddError(null);
@@ -207,7 +208,7 @@ function KasPageInner() {
   };
 
   const handleAdd = async () => {
-    const nominal = parseInt(addNominal, 10);
+    const nominal = addNominal;
     if (isNaN(nominal) || nominal <= 0) {
       setAddError('Nominal harus lebih dari 0');
       return;
@@ -250,7 +251,7 @@ function KasPageInner() {
     let payload: Record<string, unknown>;
 
     if (penyesuaianMode === 'set_saldo') {
-      const target = parseInt(targetSaldoInput, 10);
+      const target = targetSaldoInput;
       if (isNaN(target) || target < 0) {
         setPenyesuaianError('Target saldo kas harus angka valid >= 0');
         return;
@@ -265,7 +266,7 @@ function KasPageInner() {
         alasan: penyesuaianAlasan.trim() || `Pencatatan sisa fisik kas (${formatRupiah(target)})`,
       };
     } else {
-      const nom = parseInt(adjNominalInput, 10);
+      const nom = adjNominalInput;
       if (isNaN(nom) || nom <= 0) {
         setPenyesuaianError('Nominal penyesuaian harus lebih dari 0');
         return;
@@ -311,11 +312,11 @@ function KasPageInner() {
 
   // Live preview for set_saldo mode
   const currentSaldoNum = saldoInfo?.saldo_saat_ini ?? 0;
-  const targetSaldoNum = parseInt(targetSaldoInput, 10) || 0;
+  const targetSaldoNum = targetSaldoInput || 0;
   const previewDiff = targetSaldoNum - currentSaldoNum;
 
   // Live preview for tambah_kurang mode
-  const adjNominalNum = parseInt(adjNominalInput, 10) || 0;
+  const adjNominalNum = adjNominalInput || 0;
   const previewAdjNet = operasiTipe === '+' ? adjNominalNum : -adjNominalNum;
   const previewNewSaldo = currentSaldoNum + previewAdjNet;
 
@@ -507,13 +508,12 @@ function KasPageInner() {
         title={addTipe === 'pemasukan' ? 'Tambah Pemasukan' : 'Tambah Pengeluaran'}
       >
         <div className="flex flex-col gap-4">
-          <Input
-            label="Nominal (Rp)"
-            type="number"
+          <CurrencyInput
+            label="Nominal Transaksi"
             value={addNominal}
-            onChange={(e) => setAddNominal(e.target.value)}
-            min={1}
+            onChange={setAddNominal}
             placeholder="0"
+            quickAdds={[10000, 20000, 50000, 100000]}
           />
 
           <div className="flex flex-col gap-1">
@@ -580,13 +580,12 @@ function KasPageInner() {
                 Masukkan jumlah saldo fisik riil kas saat ini. Sistem akan menghitung penyesuaian otomatis agar saldo kas sama persis.
               </p>
 
-              <Input
-                label="Target Saldo Kas Riil (Rp)"
-                type="number"
-                min={0}
+              <CurrencyInput
+                label="Target Saldo Kas Riil"
                 value={targetSaldoInput}
-                onChange={(e) => setTargetSaldoInput(e.target.value)}
+                onChange={setTargetSaldoInput}
                 placeholder="0"
+                quickAdds={[50000, 100000, 200000, 500000]}
               />
 
               {/* Live Preview */}
@@ -655,13 +654,12 @@ function KasPageInner() {
                 </button>
               </div>
 
-              <Input
-                label="Nominal Penyesuaian (Rp)"
-                type="number"
-                min={1}
+              <CurrencyInput
+                label="Nominal Penyesuaian"
                 value={adjNominalInput}
-                onChange={(e) => setAdjNominalInput(e.target.value)}
-                placeholder="Contoh: 50000"
+                onChange={setAdjNominalInput}
+                placeholder="0"
+                quickAdds={[10000, 20000, 50000, 100000]}
               />
 
               {/* Live Preview */}

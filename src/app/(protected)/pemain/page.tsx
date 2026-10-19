@@ -9,13 +9,14 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchField } from '@/components/ui/SearchField';
 import { Avatar } from '@/components/ui/Avatar';
 import { IconButton } from '@/components/ui/IconButton';
+import { Tabs } from '@/components/ui/Tabs';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { PemainForm, type PemainFormValues } from '@/components/pemain/PemainForm';
 import { formatRupiah } from '@/lib/money';
 
@@ -50,6 +51,7 @@ export default function PemainPage() {
   const [pemainList, setPemainList] = useState<Pemain[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [search, setSearch] = useState('');
+  const [filterTab, setFilterTab] = useState<'semua' | 'member' | 'non-member'>('semua');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -280,7 +282,19 @@ export default function PemainPage() {
           aria-label="Cari pemain"
         />
 
-        <div className="flex flex-col gap-3">
+        {/* Tab Filter Status */}
+        <Tabs
+          tabs={[
+            { key: 'semua', label: `Semua (${pemainList.length})` },
+            { key: 'member', label: `Member (${pemainList.filter((p) => p.is_member).length})` },
+            { key: 'non-member', label: `Non-Member (${pemainList.filter((p) => !p.is_member).length})` },
+          ]}
+          active={filterTab}
+          onChange={(k) => setFilterTab(k as typeof filterTab)}
+          variant="pill"
+        />
+
+        <div className="flex flex-col gap-2.5">
           {loading ? (
             <SkeletonList count={4} />
           ) : error ? (
@@ -288,120 +302,144 @@ export default function PemainPage() {
           ) : pemainList.length === 0 ? (
             <EmptyState message="Belum ada pemain" hint="Tekan tombol + untuk menambah pemain" />
           ) : (
-            pemainList.map((p) => {
-              const isLoadingAction = actionLoadingId === p.id;
-              return (
-                <div
-                  key={p.id}
-                  className="bg-surface rounded-2xl border border-line/80 shadow-card p-4 transition-all hover:shadow-float"
-                >
-                  {/* Header info baris pemain */}
-                  <div
-                    onClick={() => router.push(`/pemain/${p.id}`)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        router.push(`/pemain/${p.id}`);
-                      }
-                    }}
-                    className="group flex items-center gap-3.5 cursor-pointer"
-                  >
-                    <Avatar name={p.nama} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors truncate text-[15px]">
-                        {p.nama}
-                      </p>
-                      {p.no_hp && (
-                        <p className="text-caption text-ink-600 mt-0.5 truncate">{p.no_hp}</p>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {p.is_member ? (
-                        p.iuran_status === 'bayar_nanti' ? (
-                          <Badge label="Member (Bayar Nanti)" variant="warning" />
-                        ) : p.iuran_status === 'gratis' ? (
-                          <Badge label="Member (Gratis)" variant="info" />
-                        ) : (
-                          <Badge label="Member" variant="member" />
-                        )
-                      ) : (
-                        <Badge label="Non-Member" variant="non-member" />
-                      )}
-                      {p.bebas_biaya && <Badge label="Bebas Biaya" variant="bebas-biaya" />}
-                      <Badge
-                        label={p.aktif ? 'Aktif' : 'Nonaktif'}
-                        variant={p.aktif ? 'aktif' : 'non-aktif'}
-                      />
-                    </div>
-                  </div>
+            (() => {
+              const displayedPemain = pemainList.filter((p) => {
+                if (filterTab === 'member') return p.is_member;
+                if (filterTab === 'non-member') return !p.is_member;
+                return true;
+              });
 
-                  {/* Tombol Aksi di bagian bawah kartu */}
-                  <div className="mt-3.5 pt-3 border-t border-line/60 flex items-center justify-end gap-2 flex-wrap">
-                    {!p.is_member ? (
-                      <>
+              if (displayedPemain.length === 0) {
+                return (
+                  <div className="text-center py-8 bg-surface rounded-2xl border border-line p-5">
+                    <p className="text-body font-medium text-ink-700">Tidak ada pemain dengan filter ini</p>
+                    <p className="text-caption text-ink-400 mt-1">Coba ubah tab atau kata kunci pencarian</p>
+                  </div>
+                );
+              }
+
+              return displayedPemain.map((p) => {
+                const isLoadingAction = actionLoadingId === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    className="bg-surface rounded-2xl border border-line/80 shadow-xs hover:shadow-card p-3.5 transition-all flex flex-col gap-2.5"
+                  >
+                    {/* Header info baris pemain */}
+                    <div
+                      onClick={() => router.push(`/pemain/${p.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          router.push(`/pemain/${p.id}`);
+                        }
+                      }}
+                      className="group flex items-center gap-3 cursor-pointer"
+                    >
+                      <Avatar name={p.nama} size="md" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors truncate text-[15px]">
+                            {p.nama}
+                          </span>
+                          {p.is_member ? (
+                            p.iuran_status === 'bayar_nanti' ? (
+                              <Badge label="Bayar Nanti" variant="warning" />
+                            ) : p.iuran_status === 'gratis' ? (
+                              <Badge label="Gratis" variant="info" />
+                            ) : (
+                              <Badge label="Member" variant="member" />
+                            )
+                          ) : (
+                            <Badge label="Non-Member" variant="non-member" />
+                          )}
+                          {p.bebas_biaya && <Badge label="Bebas Biaya" variant="bebas-biaya" />}
+                          {!p.aktif && <Badge label="Nonaktif" variant="non-aktif" />}
+                        </div>
+                        {p.no_hp && (
+                          <p className="text-caption text-ink-500 mt-0.5 truncate">{p.no_hp}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Tombol Aksi di bagian bawah kartu (Ramping & scannable) */}
+                    <div className="flex items-center justify-between pt-2 border-t border-line/40 text-xs">
+                      <span className="text-caption text-ink-400 truncate max-w-[130px]">
+                        {p.catatan || 'Ketuk untuk detail'}
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {!p.is_member ? (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="tonal"
+                              className="!py-1 !px-2.5 !text-xs !h-7 font-semibold"
+                              onClick={() => openCatatIuran(p, 'lunas')}
+                              disabled={isLoadingAction}
+                            >
+                              + Iuran
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="!py-1 !px-2 !text-xs !h-7 text-ink-600 hover:text-ink-900"
+                              onClick={() => handleQuickTanpaBayar(p)}
+                              disabled={isLoadingAction}
+                              title="Jadikan Member Tanpa Bayar untuk bulan ini"
+                            >
+                              Gratis
+                            </Button>
+                          </>
+                        ) : p.iuran_status === 'bayar_nanti' ? (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="primary"
+                              className="!py-1 !px-2.5 !text-xs !h-7 font-semibold"
+                              onClick={() => handleLunasiIuran(p)}
+                              disabled={isLoadingAction}
+                            >
+                              {isLoadingAction ? '...' : 'Lunasi'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="!py-1 !px-2 !text-xs !h-7 text-ink-600 hover:text-ink-900"
+                              onClick={() => handleBatalIuran(p)}
+                              disabled={isLoadingAction}
+                            >
+                              Batal
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="!py-1 !px-2.5 !text-xs !h-7 text-danger hover:bg-danger-surface"
+                            onClick={() => handleBatalIuran(p)}
+                            disabled={isLoadingAction}
+                            title="Batalkan status membership bulan ini"
+                          >
+                            {isLoadingAction ? '...' : 'Batal Member'}
+                          </Button>
+                        )}
+
                         <Button
                           size="sm"
                           variant="tonal"
-                          onClick={() => openCatatIuran(p, 'lunas')}
-                          disabled={isLoadingAction}
+                          className="!py-1 !px-2.5 !text-xs !h-7"
+                          onClick={() => openEdit(p)}
                         >
-                          + Iuran
+                          Edit
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleQuickTanpaBayar(p)}
-                          disabled={isLoadingAction}
-                          title="Jadikan Member Tanpa Bayar untuk bulan ini"
-                        >
-                          Tanpa Bayar
-                        </Button>
-                      </>
-                    ) : p.iuran_status === 'bayar_nanti' ? (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="primary"
-                          onClick={() => handleLunasiIuran(p)}
-                          disabled={isLoadingAction}
-                        >
-                          {isLoadingAction ? 'Memproses...' : 'Lunasi Iuran'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleBatalIuran(p)}
-                          disabled={isLoadingAction}
-                          title="Batalkan status membership"
-                        >
-                          Batal
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleBatalIuran(p)}
-                        disabled={isLoadingAction}
-                        title="Batalkan status membership bulan ini"
-                      >
-                        {isLoadingAction ? 'Memproses...' : 'Batal Member'}
-                      </Button>
-                    )}
-
-                    <Button
-                      size="sm"
-                      variant="tonal"
-                      onClick={() => openEdit(p)}
-                    >
-                      Edit
-                    </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              });
+            })()
           )}
         </div>
 
@@ -549,13 +587,12 @@ export default function PemainPage() {
           </div>
 
           {iuranStatusMode !== 'gratis' && (
-            <Input
-              label={iuranStatusMode === 'bayar_nanti' ? 'Nominal Tagihan Iuran (Rp)' : 'Nominal Iuran (Rp)'}
-              type="number"
-              value={iuranNominal}
-              onChange={(e) => setIuranNominal(e.target.value)}
-              min={1}
-              placeholder="50000"
+            <CurrencyInput
+              label={iuranStatusMode === 'bayar_nanti' ? 'Nominal Tagihan Iuran' : 'Nominal Iuran'}
+              value={parseInt(iuranNominal, 10) || 0}
+              onChange={(val) => setIuranNominal(String(val))}
+              placeholder="0"
+              quickAdds={[25000, 50000, 75000, 100000]}
             />
           )}
 
