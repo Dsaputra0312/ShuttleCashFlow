@@ -7,6 +7,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Avatar } from '@/components/ui/Avatar';
 import { formatRupiah } from '@/lib/money';
 
@@ -732,12 +733,12 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                 )}
 
                 {/* Input Jumlah Bayar */}
-                <Input
+                <CurrencyInput
                   label="Jumlah Bayar"
-                  type="number"
-                  value={jumlahBayar}
-                  onChange={(e) => setJumlahBayar(e.target.value)}
-                  min={0}
+                  value={parseInt(jumlahBayar, 10) || 0}
+                  onChange={(val) => setJumlahBayar(String(val))}
+                  placeholder="0"
+                  quickAdds={[5000, 10000, 20000, 50000]}
                 />
 
                 {bayarError && (
@@ -768,8 +769,10 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                 </div>
 
                 {rincianSheet.peserta.status_main === 'selesai' && !terkunci && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       const p = rincianSheet.peserta;
                       setRincianSheet(null);
@@ -777,10 +780,10 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                       setAlasanBuka('');
                       setBukaError(null);
                     }}
-                    className="text-caption text-ink-400 hover:text-danger transition-colors text-center pt-1"
+                    className="w-full !text-ink-600 hover:!text-danger border border-line rounded-xl !h-9 text-caption font-semibold mt-1"
                   >
-                    Buka kembali status bermain
-                  </button>
+                    Buka Kembali Status Bermain
+                  </Button>
                 )}
               </div>
             )}
@@ -873,13 +876,12 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
             </div>
           </div>
 
-          <Input
-            label="Nominal (Rp)"
-            type="number"
-            value={iuranNominal}
-            onChange={(e) => setIuranNominal(e.target.value)}
-            min={1}
-            placeholder="50000"
+          <CurrencyInput
+            label="Nominal Iuran"
+            value={parseInt(iuranNominal, 10) || 0}
+            onChange={(val) => setIuranNominal(String(val))}
+            placeholder="0"
+            quickAdds={[25000, 50000, 75000, 100000]}
           />
 
           {iuranError && (

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -483,13 +483,12 @@ function PemainDetailPageInner() {
           </div>
 
           {iuranStatusMode !== 'gratis' && (
-            <Input
-              label={iuranStatusMode === 'bayar_nanti' ? 'Nominal Tagihan Iuran (Rp)' : 'Nominal Iuran (Rp)'}
-              type="number"
-              value={iuranNominal}
-              onChange={(e) => setIuranNominal(e.target.value)}
-              min={1}
-              placeholder="50000"
+            <CurrencyInput
+              label={iuranStatusMode === 'bayar_nanti' ? 'Nominal Tagihan Iuran' : 'Nominal Iuran'}
+              value={parseInt(iuranNominal, 10) || 0}
+              onChange={(val) => setIuranNominal(String(val))}
+              placeholder="0"
+              quickAdds={[25000, 50000, 75000, 100000]}
             />
           )}
 

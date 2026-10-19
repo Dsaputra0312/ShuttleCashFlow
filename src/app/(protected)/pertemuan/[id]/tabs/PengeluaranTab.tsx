@@ -8,6 +8,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Chip } from '@/components/ui/Chip';
 import { StatTile } from '@/components/ui/StatTile';
 import { ListRow } from '@/components/ui/ListRow';
@@ -376,13 +377,12 @@ export function PengeluaranTab({ pertemuanId, terkunci }: PengeluaranTabProps) {
           </div>
 
           {/* Nominal Input */}
-          <Input
+          <CurrencyInput
             label="Nominal Pengeluaran"
-            type="number"
-            value={nominal}
-            onChange={(e) => setNominal(e.target.value)}
-            placeholder="Contoh: 100000"
-            min={1}
+            value={parseInt(nominal, 10) || 0}
+            onChange={(val) => setNominal(String(val))}
+            placeholder="0"
+            quickAdds={[20000, 50000, 100000, 200000]}
           />
 
           {/* Keterangan Input */}

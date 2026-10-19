@@ -14,6 +14,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Textarea } from '@/components/ui/Textarea';
 import { Stepper } from '@/components/ui/Stepper';
 import { Tabs } from '@/components/ui/Tabs';
@@ -487,13 +488,12 @@ function StokPageInner() {
               = {beliTabung * 12} biji bola baru
             </p>
 
-            <Input
-              label="Total Harga Beli (Rp)"
-              type="number"
-              value={beliHarga}
-              onChange={(e) => setBeliHarga(e.target.value)}
-              min={1}
-              placeholder="Contoh: 150000"
+            <CurrencyInput
+              label="Total Harga Beli"
+              value={parseInt(beliHarga, 10) || 0}
+              onChange={(val) => setBeliHarga(String(val))}
+              placeholder="0"
+              quickAdds={[50000, 100000, 150000, 200000]}
             />
 
             {beliError && (
