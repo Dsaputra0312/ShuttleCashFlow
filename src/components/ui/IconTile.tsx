@@ -24,7 +24,7 @@ export function IconTile({ tint, icon, size = 40, className = '' }: IconTileProp
   return (
     <div
       className={[
-        'inline-flex shrink-0 items-center justify-center rounded-lg',
+        'inline-flex shrink-0 items-center justify-center rounded-xl',
         sizeClass,
         bg,
         text,
