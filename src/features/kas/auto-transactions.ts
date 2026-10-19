@@ -67,10 +67,7 @@ export async function createTagihanTransaction(
       kategori_id: kategori?.id ?? null,
       nominal: kelebihan,
       tipe: 'pemasukan',
-      keterangan:
-        tagihan === 0
-          ? `Sukarela/kelebihan bayar pemain ${pemainId}`
-          : `Kelebihan bayar pertemuan pemain ${pemainId}`,
+      keterangan: `Kelebihan bayar - ${pemainNama ?? pemainId}`,
       referensi_tipe: 'peserta_pertemuan',
       referensi_id: pesertaId,
       pertemuan_id: pertemuanId,
