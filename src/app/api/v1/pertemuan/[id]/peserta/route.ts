@@ -227,7 +227,7 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
             let biayaBolaPemain = 0;
             let bolaPemain = 0;
-            if (isBebasBiaya || isMember || hasOtherBearer) {
+            if (isBebasBiaya || hasOtherBearer) {
               biayaBolaPemain = 0;
               bolaPemain = 0;
             } else if (isBearer) {

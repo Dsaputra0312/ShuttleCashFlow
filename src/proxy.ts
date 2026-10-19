@@ -25,12 +25,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow static files, Next.js internals, health, gallery
+  // Allow static files, Next.js internals, health, gallery, and PWA assets
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/api/v1/health') ||
-    pathname.startsWith('/gallery')
+    pathname.startsWith('/gallery') ||
+    pathname === '/manifest.json' ||
+    pathname === '/sw.js' ||
+    pathname === '/offline.html' ||
+    pathname.startsWith('/icons/')
   ) {
     return NextResponse.next();
   }
@@ -62,8 +66,9 @@ export const config = {
      * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization)
-     * - favicon.ico
+     * - favicon.ico, manifest.json, sw.js, offline.html
+     * - static files with extensions (.png, .jpg, .svg, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|sw.js|offline.html|icons/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json)$).*)',
   ],
 };

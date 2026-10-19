@@ -13,11 +13,11 @@ import {
   pembelian_bola,
   koreksi_stok,
   sesi,
-  konfigurasi_grup,
   pemain,
 } from '@/db/schema';
 import { getGrupContext } from '@/features/auth/get-grup-context';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { formatStokBola } from '@/lib/stock';
 
 /** Today's date in WIB (UTC+7) as YYYY-MM-DD */
 function todayWIB(): string {
@@ -81,18 +81,8 @@ export async function GET(request: NextRequest) {
     const totalPengeluaranAll = parseInt(pengeluaranAll[0]?.total ?? '0', 10) || 0;
     const saldo_kas = totalPemasukanAll - totalPengeluaranAll;
 
-    // (b) Stok bola saat ini
-    const konfigs = await dbClient
-      .select({
-        stok_awal: konfigurasi_grup.stok_awal,
-        isi_per_tabung: konfigurasi_grup.isi_per_tabung,
-      })
-      .from(konfigurasi_grup)
-      .where(eq(konfigurasi_grup.grup_id, grupId))
-      .limit(1);
-
-    const stokAwal = konfigs[0]?.stok_awal ?? 0;
-    const isiPerTabung = konfigs[0]?.isi_per_tabung ?? 12;
+    // (b) Stok bola saat ini (1 tabung = 12 biji)
+    const isiPerTabung = 12;
 
     const [pembelianSum, koreksiSum, sesiSum] = await Promise.all([
       dbClient
@@ -112,7 +102,8 @@ export async function GET(request: NextRequest) {
     const totalPembelian = (parseInt(pembelianSum[0]?.total ?? '0', 10) || 0) * isiPerTabung;
     const totalKoreksi = parseInt(koreksiSum[0]?.total ?? '0', 10) || 0;
     const totalTerpakai = parseInt(sesiSum[0]?.total ?? '0', 10) || 0;
-    const stok_bola = stokAwal + totalPembelian + totalKoreksi - totalTerpakai;
+    const stok_bola = totalPembelian + totalKoreksi - totalTerpakai;
+    const stok_bola_formatted = formatStokBola(stok_bola);
 
     // (c) & (d) Pemasukan & pengeluaran for filter period
     const { start, end } = getDateRange(filter, tanggal);
@@ -214,6 +205,7 @@ export async function GET(request: NextRequest) {
     return successResponse({
       saldo_kas,
       stok_bola,
+      stok_bola_formatted,
       total_pemasukan,
       total_pengeluaran,
       filter,

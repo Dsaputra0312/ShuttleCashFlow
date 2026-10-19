@@ -18,7 +18,8 @@ const createIuranSchema = z.object({
   pemain_id: z.string().uuid('pemain_id tidak valid'),
   periode_tahun: z.number().int().min(2020).max(2100),
   periode_bulan: z.number().int().min(1).max(12),
-  nominal: z.number().int().min(1, 'Nominal harus lebih dari 0'),
+  nominal: z.number().int().min(0).optional(),
+  status: z.enum(['lunas', 'bayar_nanti', 'gratis']).default('lunas'),
 });
 
 export async function GET(request: NextRequest) {
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
     return errorResponse('Validasi gagal', errors, 422);
   }
 
-  const { pemain_id, periode_tahun, periode_bulan, nominal } = parsed.data;
+  const { pemain_id, periode_tahun, periode_bulan, status } = parsed.data;
 
   try {
     const dbClient = db();
@@ -107,22 +108,33 @@ export async function POST(request: NextRequest) {
 
     if (!pemainRows[0]) return errorResponse('Pemain tidak ditemukan', undefined, 404);
 
-    // Validate nominal >= iuran_bulanan from config
+    // Load config for default iuran_bulanan
     const konfigs = await dbClient
       .select({ iuran_bulanan: konfigurasi_grup.iuran_bulanan })
       .from(konfigurasi_grup)
       .where(eq(konfigurasi_grup.grup_id, ctx.grupId))
       .limit(1);
 
-    if (konfigs[0] && nominal < konfigs[0].iuran_bulanan) {
-      return errorResponse(
-        `Nominal iuran minimal Rp ${konfigs[0].iuran_bulanan}`,
-        { nominal: [`Minimal Rp ${konfigs[0].iuran_bulanan}`] },
-        422
-      );
+    const defaultIuran = konfigs[0]?.iuran_bulanan ?? 50000;
+    let finalNominal = parsed.data.nominal ?? defaultIuran;
+
+    if (status === 'gratis') {
+      finalNominal = 0;
+    } else if (status === 'lunas') {
+      if (finalNominal < defaultIuran) {
+        return errorResponse(
+          `Nominal iuran minimal Rp ${defaultIuran}`,
+          { nominal: [`Minimal Rp ${defaultIuran}`] },
+          422
+        );
+      }
+    } else if (status === 'bayar_nanti') {
+      if (finalNominal <= 0) {
+        finalNominal = defaultIuran;
+      }
     }
 
-    // Insert iuran (unique constraint will fail if duplicate)
+    // Insert iuran (unique constraint will fail if duplicate for same month)
     let newIuran;
     try {
       const rows = await dbClient
@@ -132,7 +144,9 @@ export async function POST(request: NextRequest) {
           pemain_id,
           periode_tahun,
           periode_bulan,
-          nominal,
+          nominal: finalNominal,
+          status,
+          dibayar_pada: status === 'lunas' ? new Date() : null,
         })
         .returning();
       newIuran = rows[0];
@@ -144,15 +158,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create auto-transaction
-    await createIuranTransaction(dbClient, {
-      grupId: ctx.grupId,
-      pemainId: pemain_id,
-      pemainNama: pemainRows[0].nama,
-      adminId: ctx.adminId,
-      iuranId: newIuran.id,
-      nominal,
-    });
+    // Only create kas transaction if paid now (lunas)
+    if (status === 'lunas') {
+      await createIuranTransaction(dbClient, {
+        grupId: ctx.grupId,
+        pemainId: pemain_id,
+        pemainNama: pemainRows[0].nama,
+        adminId: ctx.adminId,
+        iuranId: newIuran.id,
+        nominal: finalNominal,
+      });
+    }
 
     await logActivity({
       grupId: ctx.grupId,
@@ -160,10 +176,17 @@ export async function POST(request: NextRequest) {
       aksi: 'CREATE',
       entitas: 'iuran',
       entitasId: newIuran.id,
-      detail: { pemain_id, periode_tahun, periode_bulan, nominal },
+      detail: { pemain_id, periode_tahun, periode_bulan, nominal: finalNominal, status },
     });
 
-    return successResponse(newIuran, 'Iuran berhasil dicatat', 201);
+    const message =
+      status === 'bayar_nanti'
+        ? 'Membership berhasil dicatat (Bayar Nanti)'
+        : status === 'gratis'
+        ? 'Membership manual tanpa bayar berhasil dicatat'
+        : 'Iuran berhasil dicatat (Lunas)';
+
+    return successResponse(newIuran, message, 201);
   } catch (err) {
     console.error('[POST /iuran]', err);
     return errorResponse('Terjadi kesalahan server', undefined, 500);

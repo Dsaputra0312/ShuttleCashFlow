@@ -28,6 +28,10 @@ export const iuran = pgTable(
     periode_tahun: smallint('periode_tahun').notNull(),
     periode_bulan: smallint('periode_bulan').notNull(),
     nominal: integer('nominal').notNull(),
+    status: text('status', { enum: ['lunas', 'bayar_nanti', 'gratis'] })
+      .notNull()
+      .default('lunas'),
+    dibayar_pada: timestamp('dibayar_pada', { withTimezone: true }),
     dibuat_pada: timestamp('dibuat_pada', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [

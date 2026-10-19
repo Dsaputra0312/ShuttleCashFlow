@@ -22,39 +22,13 @@ async function main() {
 
   const sql = neon(url);
 
-  console.log('🗑️ Dropping all tables (CASCADE)...');
+  console.log('🗑️ Dropping schema public & drizzle (CASCADE)...');
 
-  // Drop all application tables in dependency order or with CASCADE
-  await sql`
-    DROP TABLE IF EXISTS
-      transaksi_kas,
-      pembelian_bola,
-      koreksi_stok,
-      iuran,
-      sesi_pemain,
-      sesi,
-      peserta_pertemuan,
-      pertemuan,
-      log_aktivitas,
-      pemain,
-      kategori_kas,
-      konfigurasi_grup,
-      sesi_admin,
-      grup_admin,
-      admin,
-      grup,
-      __drizzle_migrations
-    CASCADE;
-  `;
+  await sql`DROP SCHEMA IF EXISTS public CASCADE;`;
+  await sql`CREATE SCHEMA public;`;
+  await sql`DROP SCHEMA IF EXISTS drizzle CASCADE;`;
 
-  // Drop custom types if any
-  try {
-    await sql`DROP TYPE IF EXISTS status_main CASCADE;`;
-  } catch {
-    // ignore
-  }
-
-  console.log('✓ All tables dropped');
+  console.log('✓ Database schema reset complete');
 
   console.log('🔄 Running migrations...');
   execSync('pnpm db:migrate', { stdio: 'inherit' });

@@ -13,7 +13,6 @@ interface KonfigurasiData {
   iuran_bulanan: number;
   kelipatan_pembulatan: number;
   biaya_sewa_default: number;
-  stok_awal: number;
 }
 
 const DEFAULT: KonfigurasiData = {
@@ -23,7 +22,6 @@ const DEFAULT: KonfigurasiData = {
   iuran_bulanan: 50000,
   kelipatan_pembulatan: 1000,
   biaya_sewa_default: 100000,
-  stok_awal: 0,
 };
 
 export default function KonfigurasiPage() {
@@ -47,7 +45,6 @@ export default function KonfigurasiPage() {
             iuran_bulanan: d.iuran_bulanan,
             kelipatan_pembulatan: d.kelipatan_pembulatan,
             biaya_sewa_default: d.biaya_sewa_default,
-            stok_awal: d.stok_awal,
           });
         }
       } catch {
@@ -104,12 +101,19 @@ export default function KonfigurasiPage() {
     { key: 'iuran_bulanan', label: 'Iuran Bulanan (Rp)' },
     { key: 'kelipatan_pembulatan', label: 'Kelipatan Pembulatan (Rp)' },
     { key: 'biaya_sewa_default', label: 'Biaya Sewa Default (Rp)' },
-    { key: 'stok_awal', label: 'Stok Awal (tabung)' },
   ];
 
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold text-neutral-900 mb-4">Konfigurasi</h1>
+
+      <div className="bg-primary-50 border border-primary-200 rounded-xl p-3.5 mb-4 text-xs text-primary-900">
+        <p className="font-semibold mb-0.5">🏸 Pengelolaan Stok Bola</p>
+        <p className="text-primary-700 leading-relaxed">
+          Pencatatan sisa fisik bola awal, pembelian tabung, dan koreksi stok kini dikelola langsung di menu{' '}
+          <span className="font-semibold underline">Lainnya &gt; Stok Bola</span>.
+        </p>
+      </div>
 
       {fetching ? (
         <p className="text-neutral-500">Memuat...</p>
