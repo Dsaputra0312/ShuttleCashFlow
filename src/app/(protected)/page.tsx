@@ -109,14 +109,23 @@ function generateLaporanPertemuanText(pt: RingkasanPertemuan): string {
     });
     if (
       pt.total_tagihan > 0 &&
-      pt.total_dibayar !== undefined &&
-      pt.total_dibayar < pt.total_tagihan
+      pt.total_dibayar !== undefined
     ) {
-      lines.push(
-        `   _(Total Tagihan: ${formatRupiah(pt.total_tagihan)} | Masuk Kas: ${formatRupiah(
-          pt.total_dibayar
-        )} | Belum Lunas: ${formatRupiah(pt.total_tagihan - pt.total_dibayar)})_`
-      );
+      const kelebihan = Math.max(0, pt.total_dibayar - pt.total_tagihan);
+      const sisaBelumLunas = Math.max(0, pt.total_tagihan - (pt.total_dibayar - kelebihan));
+      if (sisaBelumLunas > 0) {
+        lines.push(
+          `   _(Tagihan: ${formatRupiah(pt.total_tagihan)} | Masuk Kas: ${formatRupiah(
+            pt.total_dibayar
+          )} | Belum Lunas: ${formatRupiah(sisaBelumLunas)})_`
+        );
+      } else if (kelebihan > 0) {
+        lines.push(
+          `   _(Tagihan: ${formatRupiah(pt.total_tagihan)} | Masuk Kas: ${formatRupiah(
+            pt.total_dibayar
+          )} | Kelebihan: +${formatRupiah(kelebihan)})_`
+        );
+      }
     }
   } else {
     lines.push('   • _(Tidak ada pemasukan)_: Rp 0');
@@ -148,11 +157,17 @@ function generateLaporanPertemuanText(pt: RingkasanPertemuan): string {
     }
     if (pt.total_tagihan) {
       const isLunas = (pt.total_dibayar ?? 0) >= pt.total_tagihan;
+      const kelebihan = Math.max(0, (pt.total_dibayar ?? 0) - pt.total_tagihan);
+      let statusText = isLunas ? 'Lunas' : `Terbayar: ${formatRupiah(pt.total_dibayar ?? 0)}`;
+      if (kelebihan > 0) {
+        statusText += `, lebih +${formatRupiah(kelebihan)}`;
+      }
       lines.push(
-        `• Tagihan Mabar: ${formatRupiah(pt.total_tagihan)} (${
-          isLunas ? 'Lunas' : `Terbayar: ${formatRupiah(pt.total_dibayar ?? 0)}`
-        })`
+        `• Tagihan Mabar: ${formatRupiah(pt.total_tagihan)} (${statusText})`
       );
+      if (kelebihan > 0) {
+        lines.push(`• Total Masuk Kas: ${formatRupiah(pt.total_dibayar ?? 0)}`);
+      }
     }
   }
 

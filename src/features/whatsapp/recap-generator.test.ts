@@ -142,9 +142,17 @@ describe('generateRekapWhatsApp', () => {
     }
   });
 
-  it('result is a non-empty string', () => {
-    const result = generateRekapWhatsApp(PERTEMUAN, SESI_LIST, PESERTA_LIST);
-    expect(typeof result).toBe('string');
-    expect(result.length).toBeGreaterThan(0);
+  it('shows overpayment and total masuk kas when player pays more', () => {
+    const pesertaWithOverpayment: PesertaData[] = [
+      { pemain_id: 'p-1', nama: 'Budi', tagihan: 15000, dibayar: 20000, status_main: 'lunas' },
+      { pemain_id: 'p-2', nama: 'Eko', tagihan: 0, dibayar: 10000, status_main: 'lunas' },
+    ];
+    const result = generateRekapWhatsApp(PERTEMUAN, [], pesertaWithOverpayment);
+    expect(result).toContain('Budi: *Rp 15.000 _(bayar Rp 20.000, lebih +Rp 5.000)_*');
+    expect(result).toContain('Eko: *Gratis _(sukarela +Rp 10.000)_*');
+    expect(result).toContain('• Total Tagihan: Rp 15.000');
+    expect(result).toContain('• Kelebihan Bayar: +Rp 15.000');
+    expect(result).toContain('*Total Masuk Kas: Rp 30.000*');
   });
 });
+

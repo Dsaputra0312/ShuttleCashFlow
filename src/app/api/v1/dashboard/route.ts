@@ -349,13 +349,31 @@ export async function GET(request: NextRequest) {
           nominal: total_biaya_lapangan,
         });
       }
+      const total_pembulatan = billingResult.tagihan_per_pemain.reduce(
+        (acc, p) => acc + Math.max(0, p.tagihan - (p.biaya_bola_raw + p.biaya_lapangan_raw)),
+        0
+      );
+      if (total_pembulatan > 0) {
+        rincian_pemasukan.push({
+          deskripsi: 'Pembulatan Tagihan',
+          nominal: total_pembulatan,
+        });
+      }
+
       const kelebihanBayarTxs = txPertemuanRows.filter(
         (t) =>
           t.tipe === 'pemasukan' &&
           (t.keterangan?.toLowerCase().includes('kelebihan') ||
             t.kategori_nama?.toLowerCase().includes('kelebihan'))
       );
-      const total_kelebihan = kelebihanBayarTxs.reduce((acc, t) => acc + t.nominal, 0);
+      const total_kelebihan_tx = kelebihanBayarTxs.reduce((acc, t) => acc + t.nominal, 0);
+      const total_kelebihan_peserta = pesertaRows.reduce((acc, p) => {
+        if (p.status_main === 'lunas' && (p.dibayar ?? 0) > (p.tagihan ?? 0)) {
+          return acc + ((p.dibayar ?? 0) - (p.tagihan ?? 0));
+        }
+        return acc;
+      }, 0);
+      const total_kelebihan = Math.max(total_kelebihan_tx, total_kelebihan_peserta);
       if (total_kelebihan > 0) {
         rincian_pemasukan.push({
           deskripsi: 'Kelebihan Bayar',

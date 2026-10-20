@@ -346,10 +346,18 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
 
   // Summary Calculations
   const totalTagihan = pesertaList.reduce((acc, p) => acc + (p.tagihan || 0), 0);
+  const totalKelebihan = pesertaList
+    .filter((p) => p.status_main === 'lunas')
+    .reduce((acc, p) => acc + Math.max(0, (p.dibayar || 0) - (p.tagihan || 0)), 0);
+  const totalTagihanLunas = pesertaList
+    .filter((p) => p.status_main === 'lunas')
+    .reduce((acc, p) => acc + (p.tagihan || 0), 0);
   const totalTerkumpul = pesertaList
     .filter((p) => p.status_main === 'lunas')
     .reduce((acc, p) => acc + (p.dibayar || p.tagihan || 0), 0);
-  const totalBelumBayar = Math.max(0, totalTagihan - totalTerkumpul);
+  const totalBelumBayar = pesertaList
+    .filter((p) => p.status_main !== 'lunas')
+    .reduce((acc, p) => acc + (p.tagihan || 0), 0);
   const countBelumBayar = pesertaList.filter((p) => p.status_main !== 'lunas').length;
   const countLunas = pesertaList.filter((p) => p.status_main === 'lunas').length;
 
@@ -428,7 +436,9 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                 {formatRupiah(totalTerkumpul)}
               </p>
               <p className="text-[11px] text-emerald-700/90 mt-1">
-                dari {formatRupiah(totalTagihan)}
+                {totalKelebihan > 0
+                  ? `Tagihan ${formatRupiah(totalTagihanLunas)} + Lebih ${formatRupiah(totalKelebihan)}`
+                  : `dari ${formatRupiah(totalTagihan)}`}
               </p>
             </div>
           </div>
@@ -452,6 +462,19 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
               </p>
             </div>
           </div>
+
+          {/* Banner Kelebihan Bayar jika ada */}
+          {totalKelebihan > 0 && (
+            <div className="col-span-2 bg-emerald-100/70 border border-emerald-200/90 rounded-xl px-3.5 py-2.5 flex items-center justify-between text-caption text-emerald-950">
+              <span className="flex items-center gap-1.5 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                Pemasukan Kelebihan Bayar:
+              </span>
+              <span className="font-bold nums text-emerald-800">
+                +{formatRupiah(totalKelebihan)}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -532,6 +555,11 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                     : p.bebas_biaya
                     ? `Bebas Biaya · ${formatRupiah(p.tagihan)}`
                     : `Non-Member · ${formatRupiah(p.tagihan)}`}
+                  {p.status_main === 'lunas' && (p.dibayar || 0) > p.tagihan && (
+                    <span className="text-emerald-700 font-semibold ml-1.5">
+                      · Bayar {formatRupiah(p.dibayar)} (+{formatRupiah(p.dibayar - p.tagihan)})
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="shrink-0">{statusBadge(p.status_main)}</div>
@@ -745,6 +773,26 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
                   {formatRupiah(rincianSheet.breakdown.tagihan_total)}
                 </span>
               </div>
+              {rincianSheet.peserta.status_main === 'lunas' &&
+                (rincianSheet.peserta.dibayar || 0) > rincianSheet.breakdown.tagihan_total && (
+                  <>
+                    <div className="flex justify-between text-emerald-700 font-semibold text-caption pt-1.5 border-t border-dashed border-line">
+                      <span>Kelebihan Bayar (Masuk Kas)</span>
+                      <span className="nums font-bold">
+                        +{formatRupiah(
+                          (rincianSheet.peserta.dibayar || 0) -
+                            rincianSheet.breakdown.tagihan_total
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between pt-1 font-bold text-ink-900 text-body">
+                      <span>Total Masuk Kas</span>
+                      <span className="nums text-emerald-800 font-extrabold">
+                        {formatRupiah(rincianSheet.peserta.dibayar)}
+                      </span>
+                    </div>
+                  </>
+                )}
             </div>
 
             {/* Opsi Bayar Iuran jika Non-Member */}

@@ -83,9 +83,26 @@ export function generateRekapWhatsApp(
   // Per-player billing
   lines.push('*Tagihan:*');
   const totalTagihan = pesertaList.reduce((acc, p) => acc + p.tagihan, 0);
+  const totalKelebihan = pesertaList
+    .filter((p) => p.status_main === 'lunas')
+    .reduce((acc, p) => acc + Math.max(0, (p.dibayar || 0) - p.tagihan), 0);
+  const totalTerkumpul = pesertaList
+    .filter((p) => p.status_main === 'lunas')
+    .reduce((acc, p) => acc + (p.dibayar || p.tagihan || 0), 0);
 
   pesertaList.forEach((p) => {
-    const nominalStr = p.tagihan === 0 ? 'Gratis' : formatRupiah(p.tagihan);
+    const isLunas = p.status_main === 'lunas';
+    const kelebihan = isLunas ? Math.max(0, (p.dibayar || 0) - p.tagihan) : 0;
+
+    let nominalStr = p.tagihan === 0 ? 'Gratis' : formatRupiah(p.tagihan);
+    if (kelebihan > 0) {
+      if (p.tagihan === 0) {
+        nominalStr = `Gratis _(sukarela +${formatRupiah(kelebihan)})_`;
+      } else {
+        nominalStr = `${formatRupiah(p.tagihan)} _(bayar ${formatRupiah(p.dibayar)}, lebih +${formatRupiah(kelebihan)})_`;
+      }
+    }
+
     // Find sessions where this player is penanggung
     const penanggungSesiIndices = sesiList
       .map((s, i) => (s.ditanggung_oleh_pemain_id === p.pemain_id ? i + 1 : null))
@@ -98,7 +115,13 @@ export function generateRekapWhatsApp(
   });
 
   lines.push('');
-  lines.push(`*Total: ${formatRupiah(totalTagihan)}*`);
+  if (totalKelebihan > 0) {
+    lines.push(`• Total Tagihan: ${formatRupiah(totalTagihan)}`);
+    lines.push(`• Kelebihan Bayar: +${formatRupiah(totalKelebihan)}`);
+    lines.push(`*Total Masuk Kas: ${formatRupiah(totalTerkumpul)}*`);
+  } else {
+    lines.push(`*Total: ${formatRupiah(totalTagihan)}*`);
+  }
 
   return lines.join('\n');
 }
