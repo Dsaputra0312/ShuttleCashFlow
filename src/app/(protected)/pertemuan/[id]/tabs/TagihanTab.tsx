@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { CheckCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -9,6 +10,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { Avatar } from '@/components/ui/Avatar';
+import { Tabs } from '@/components/ui/Tabs';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { formatRupiah } from '@/lib/money';
 
 const BULAN = [
@@ -91,6 +94,11 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
   const [iuranNominal, setIuranNominal] = useState('50000');
   const [iuranLoading, setIuranLoading] = useState(false);
   const [iuranError, setIuranError] = useState<string | null>(null);
+
+  // Quick Filter & Bulk Pay
+  const [filterTab, setFilterTab] = useState<'semua' | 'belum_bayar' | 'lunas'>('semua');
+  const [bulkBayarOpen, setBulkBayarOpen] = useState(false);
+  const [bulkBayarLoading, setBulkBayarLoading] = useState(false);
 
   // Buka kembali sheet
   const [bukaSheet, setBukaSheet] = useState<PesertaWithNama | null>(null);
@@ -336,6 +344,56 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
     }
   };
 
+  // Summary Calculations
+  const totalTagihan = pesertaList.reduce((acc, p) => acc + (p.tagihan || 0), 0);
+  const totalTerkumpul = pesertaList
+    .filter((p) => p.status_main === 'lunas')
+    .reduce((acc, p) => acc + (p.dibayar || p.tagihan || 0), 0);
+  const totalBelumBayar = Math.max(0, totalTagihan - totalTerkumpul);
+  const countBelumBayar = pesertaList.filter((p) => p.status_main !== 'lunas').length;
+  const countLunas = pesertaList.filter((p) => p.status_main === 'lunas').length;
+
+  // Filtered list
+  const filteredPesertaList = pesertaList.filter((p) => {
+    if (filterTab === 'belum_bayar') return p.status_main !== 'lunas';
+    if (filterTab === 'lunas') return p.status_main === 'lunas';
+    return true;
+  });
+
+  // Eligible for Bulk Bayar (not lunas and not in active draft session)
+  const eligibleBulkPeserta = pesertaList.filter(
+    (p) => p.status_main !== 'lunas' && !p.has_active_draft_session
+  );
+  const skippedDraftCount = pesertaList.filter(
+    (p) => p.status_main !== 'lunas' && p.has_active_draft_session
+  ).length;
+  const totalEligibleTagihan = eligibleBulkPeserta.reduce(
+    (acc, p) => acc + (p.tagihan || 0),
+    0
+  );
+
+  const handleBulkBayarCash = async () => {
+    if (eligibleBulkPeserta.length === 0) return;
+    setBulkBayarLoading(true);
+    try {
+      const promises = eligibleBulkPeserta.map((p) =>
+        fetch(`/api/v1/pertemuan/${pertemuanId}/peserta/${p.id}/bayar`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jumlah: p.tagihan, metode: 'Cash' }),
+        })
+      );
+      await Promise.allSettled(promises);
+      setBulkBayarOpen(false);
+      await fetchData();
+      onRefresh?.();
+    } catch {
+      // ignore
+    } finally {
+      setBulkBayarLoading(false);
+    }
+  };
+
   const statusBadge = (status: Peserta['status_main']) => {
     if (status === 'bermain') return <Badge label="Bermain" variant="bermain" />;
     if (status === 'selesai') return <Badge label="Selesai" variant="selesai" />;
@@ -351,16 +409,101 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
   }
 
   return (
-    <div className="px-5 py-4">
-      {pesertaList.length === 0 && (
-        <EmptyState
-          message="Belum ada peserta"
-          hint="Peserta akan muncul setelah ditambahkan ke sesi"
-        />
+    <div className="px-5 py-4 flex flex-col gap-4">
+      {/* Financial Summary Tiles */}
+      {pesertaList.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          {/* Terkumpul */}
+          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-caption font-semibold text-emerald-800">
+                Terkumpul
+              </span>
+              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full">
+                {countLunas} Lunas
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <p className="font-heading font-extrabold text-[17px] text-emerald-950 tracking-tight leading-tight">
+                {formatRupiah(totalTerkumpul)}
+              </p>
+              <p className="text-[11px] text-emerald-700/90 mt-1">
+                dari {formatRupiah(totalTagihan)}
+              </p>
+            </div>
+          </div>
+
+          {/* Belum Bayar */}
+          <div className="bg-rose-50/70 border border-rose-200/80 rounded-2xl p-3.5 flex flex-col justify-between shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-caption font-semibold text-rose-800">
+                Belum Bayar
+              </span>
+              <span className="text-[11px] font-bold text-rose-700 bg-rose-100/90 px-2 py-0.5 rounded-full">
+                {countBelumBayar} Orang
+              </span>
+            </div>
+            <div className="mt-2.5">
+              <p className="font-heading font-extrabold text-[17px] text-rose-950 tracking-tight leading-tight">
+                {formatRupiah(totalBelumBayar)}
+              </p>
+              <p className="text-[11px] text-rose-700/90 mt-1">
+                {countBelumBayar > 0 ? 'Menunggu penagihan' : 'Semua lunas! 🎉'}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
-      <div className="flex flex-col gap-3">
-        {pesertaList.map((p) => (
+      {/* Filter Tabs & Bulk Action */}
+      {pesertaList.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <Tabs
+            tabs={[
+              { key: 'semua', label: `Semua (${pesertaList.length})` },
+              { key: 'belum_bayar', label: `Belum (${countBelumBayar})` },
+              { key: 'lunas', label: `Lunas (${countLunas})` },
+            ]}
+            active={filterTab}
+            onChange={(k) => setFilterTab(k as 'semua' | 'belum_bayar' | 'lunas')}
+            variant="pill"
+          />
+
+          {!terkunci && countBelumBayar > 0 && (
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                variant="tonal"
+                onClick={() => setBulkBayarOpen(true)}
+                className="!text-xs !py-1.5 !px-3 font-semibold text-primary-700 border border-primary-200 hover:bg-primary-50"
+              >
+                <CheckCheck className="w-3.5 h-3.5 mr-1.5 text-primary-700" />
+                Tandai Semua Lunas (Cash)
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Peserta List */}
+      {filteredPesertaList.length === 0 ? (
+        <EmptyState
+          message={
+            pesertaList.length === 0
+              ? 'Belum ada peserta'
+              : filterTab === 'belum_bayar'
+              ? 'Semua tagihan sudah lunas!'
+              : 'Belum ada peserta yang lunas'
+          }
+          hint={
+            pesertaList.length === 0
+              ? 'Peserta akan muncul setelah ditambahkan ke sesi'
+              : undefined
+          }
+        />
+      ) : (
+        <div className="flex flex-col gap-3">
+          {filteredPesertaList.map((p) => (
           <div
             key={p.id}
             className="bg-surface rounded-2xl border border-line/80 shadow-card p-4 transition-all hover:shadow-float"
@@ -460,6 +603,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
           </div>
         ))}
       </div>
+      )}
 
       {/* Rincian Tagihan & Pembayaran Sheet */}
       <BottomSheet
@@ -909,6 +1053,18 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
           </div>
         </div>
       </BottomSheet>
+
+      {/* Bulk Bayar Confirm Dialog */}
+      <ConfirmDialog
+        open={bulkBayarOpen}
+        onClose={() => !bulkBayarLoading && setBulkBayarOpen(false)}
+        onConfirm={handleBulkBayarCash}
+        title="Tandai Semua Lunas (Cash)"
+        description={`Tandai pembayaran tunai (Cash) untuk ${eligibleBulkPeserta.length} pemain yang belum bayar? Total yang akan dilunaskan: ${formatRupiah(totalEligibleTagihan)}.${skippedDraftCount > 0 ? ` (${skippedDraftCount} pemain dilewati karena masih bermain di lapangan)` : ''}`}
+        confirmLabel="Ya, Lunaskan Semua"
+        cancelLabel="Batal"
+        loading={bulkBayarLoading}
+      />
     </div>
   );
 }

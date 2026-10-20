@@ -3,7 +3,7 @@
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, LockOpen, Copy } from 'lucide-react';
+import { Lock, LockOpen, Share2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { SkeletonList } from '@/components/ui/Skeleton';
@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/useToast';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { IconButton } from '@/components/ui/IconButton';
 import { Tabs } from '@/components/ui/Tabs';
+import { RekapWhatsAppSheet } from '@/components/pertemuan/RekapWhatsAppSheet';
 import { SesiTab } from './tabs/SesiTab';
 import { TagihanTab } from './tabs/TagihanTab';
 import { PengeluaranTab } from './tabs/PengeluaranTab';
@@ -64,8 +65,10 @@ function PertemuanDetailPageInner() {
   const [pertemuan, setPertemuan] = useState<Pertemuan | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Salin Rekap
+  // Salin & Bagikan Rekap WA
   const [rekapLoading, setRekapLoading] = useState(false);
+  const [rekapSheetOpen, setRekapSheetOpen] = useState(false);
+  const [rekapTeks, setRekapTeks] = useState('');
 
   // Lock/Unlock
   const [kunciLoading, setKunciLoading] = useState(false);
@@ -185,19 +188,19 @@ function PertemuanDetailPageInner() {
     }
   };
 
-  const handleSalinRekap = async () => {
+  const handleBukaRekap = async () => {
     setRekapLoading(true);
+    setRekapSheetOpen(true);
     try {
       const res = await fetch(`/api/v1/pertemuan/${pertemuanId}/rekap`);
       const json = await res.json();
       if (res.ok && json.data?.teks) {
-        await navigator.clipboard.writeText(json.data.teks);
-        addToast('Rekap disalin!', 'success');
+        setRekapTeks(json.data.teks);
       } else {
         addToast(json.message ?? 'Gagal memuat rekap', 'error');
       }
     } catch {
-      addToast('Terjadi kesalahan', 'error');
+      addToast('Terjadi kesalahan memuat rekap', 'error');
     } finally {
       setRekapLoading(false);
     }
@@ -247,28 +250,26 @@ function PertemuanDetailPageInner() {
         onBack={() => router.push('/pertemuan')}
         action={
           <div className="flex items-center gap-1">
+            <IconButton
+              icon={Share2}
+              label="Rekap WhatsApp"
+              variant="ghost"
+              size="sm"
+              onClick={handleBukaRekap}
+              disabled={rekapLoading}
+            />
             {pertemuan.terkunci ? (
-              <>
-                <IconButton
-                  icon={Copy}
-                  label="Salin rekap"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSalinRekap}
-                  disabled={rekapLoading}
-                />
-                <IconButton
-                  icon={LockOpen}
-                  label="Buka kunci"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setAlasanBukaKunci('');
-                    setBukaKunciError(null);
-                    setBukaKunciOpen(true);
-                  }}
-                />
-              </>
+              <IconButton
+                icon={LockOpen}
+                label="Buka kunci"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setAlasanBukaKunci('');
+                  setBukaKunciError(null);
+                  setBukaKunciOpen(true);
+                }}
+              />
             ) : (
               <IconButton
                 icon={Lock}
@@ -424,6 +425,14 @@ function PertemuanDetailPageInner() {
           </div>
         </div>
       </BottomSheet>
+
+      {/* WhatsApp Rekap Sheet */}
+      <RekapWhatsAppSheet
+        open={rekapSheetOpen}
+        onClose={() => setRekapSheetOpen(false)}
+        teks={rekapTeks}
+        loading={rekapLoading}
+      />
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>

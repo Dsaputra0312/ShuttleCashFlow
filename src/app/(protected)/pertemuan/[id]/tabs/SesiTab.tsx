@@ -122,8 +122,43 @@ export function SesiTab({ pertemuanId, terkunci, onRefresh }: SesiTabProps) {
     );
   }
 
+  const totalBola = sesiList.reduce((acc, s) => acc + (s.bola_terpakai || 0), 0);
+  const activeDrafts = sesiList.filter((s) => s.bola_terpakai === 0);
+
   return (
-    <div className="px-5 py-4">
+    <div className="px-5 py-4 flex flex-col gap-4">
+      {/* Realtime Session & Shuttlecock Indicator */}
+      {sesiList.length > 0 && (
+        <div className="bg-surface rounded-2xl border border-line p-3.5 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700">
+              <ShuttlecockIcon size={20} />
+            </div>
+            <div>
+              <p className="text-body font-bold text-ink-900 leading-tight">
+                {totalBola} Shuttlecock
+              </p>
+              <p className="text-caption text-ink-500 mt-0.5">
+                Total terpakai dari {sesiList.length} sesi
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            {activeDrafts.length > 0 ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                {activeDrafts.length} Main
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                Semua Selesai
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {sesiList.length === 0 && (
         <EmptyState
           message="Belum ada sesi"

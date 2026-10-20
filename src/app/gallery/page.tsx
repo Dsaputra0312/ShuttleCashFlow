@@ -10,11 +10,13 @@ import { useToast } from '@/components/ui/useToast';
 import { Stepper } from '@/components/ui/Stepper';
 import { Chip } from '@/components/ui/Chip';
 import { Badge } from '@/components/ui/Badge';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 
 export default function GalleryPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [stepperValue, setStepperValue] = useState(3);
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
+  const [currencyValue, setCurrencyValue] = useState(50000);
   const { toasts, addToast, dismiss } = useToast();
 
   function toggleChip(id: string) {
@@ -53,6 +55,18 @@ export default function GalleryPage() {
         <Input label="Email" type="email" placeholder="admin@example.com" />
         <Input label="With error" error="Field ini wajib diisi" placeholder="Masukkan nilai..." />
         <Input label="With hint" hint="Format: DD/MM/YYYY" placeholder="01/01/2024" />
+      </section>
+
+      {/* Currency Input with Separators */}
+      <section className="space-y-3">
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Currency Input (Rupiah)</h2>
+        <CurrencyInput
+          label="Nominal Tagihan / Kas"
+          value={currencyValue}
+          onChange={setCurrencyValue}
+          quickAdds={[5000, 10000, 50000, 100000]}
+          hint="Input dengan pemisah ribuan otomatis & chip cepat"
+        />
       </section>
 
       {/* Card */}
