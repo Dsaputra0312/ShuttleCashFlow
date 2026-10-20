@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
@@ -72,6 +73,7 @@ function PertemuanDetailPageInner() {
 
   // Lock/Unlock
   const [kunciLoading, setKunciLoading] = useState(false);
+  const [confirmKunciOpen, setConfirmKunciOpen] = useState(false);
   const [bukaKunciOpen, setBukaKunciOpen] = useState(false);
   const [alasanBukaKunci, setAlasanBukaKunci] = useState('');
   const [bukaKunciLoading, setBukaKunciLoading] = useState(false);
@@ -276,7 +278,7 @@ function PertemuanDetailPageInner() {
                 label="Kunci pertemuan"
                 variant="ghost"
                 size="sm"
-                onClick={handleKunci}
+                onClick={() => setConfirmKunciOpen(true)}
                 disabled={kunciLoading}
               />
             )}
@@ -432,6 +434,20 @@ function PertemuanDetailPageInner() {
         onClose={() => setRekapSheetOpen(false)}
         teks={rekapTeks}
         loading={rekapLoading}
+      />
+
+      {/* Confirm Kunci Dialog */}
+      <ConfirmDialog
+        open={confirmKunciOpen}
+        onClose={() => setConfirmKunciOpen(false)}
+        onConfirm={async () => {
+          await handleKunci();
+          setConfirmKunciOpen(false);
+        }}
+        title="Kunci Pertemuan"
+        description="Apakah Anda yakin ingin mengunci pertemuan ini? Pertemuan yang terkunci tidak dapat ditambah atau diubah sesinya tanpa membuka kunci kembali."
+        confirmLabel="Kunci Pertemuan"
+        loading={kunciLoading}
       />
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />

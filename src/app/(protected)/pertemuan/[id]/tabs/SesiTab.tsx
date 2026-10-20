@@ -151,7 +151,7 @@ export function SesiTab({ pertemuanId, terkunci, onRefresh }: SesiTabProps) {
                 {activeDrafts.length} Main
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 text-center text-[14px]">
                 Semua Selesai
               </span>
             )}

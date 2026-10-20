@@ -6,6 +6,7 @@ import { CirclePlus } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -71,6 +72,17 @@ export default function PemainPage() {
   // Action loading states
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
+  // Confirm popup dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    confirmLabel: string;
+    destructive?: boolean;
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
   const fetchPemain = useCallback(async (q: string, p: number) => {
     setLoading(true);
     setError(null);
@@ -134,93 +146,105 @@ export default function PemainPage() {
   };
 
   // Instant 1-click Manual Member Tanpa Bayar
-  const handleQuickTanpaBayar = async (p: Pemain) => {
-    const confirmAction = window.confirm(
-      `Jadikan "${p.nama}" sebagai Member Gratis (Tanpa Bayar) untuk bulan ini?`
-    );
-    if (!confirmAction) return;
-
-    setActionLoadingId(p.id);
-    const currentDate = new Date();
-    try {
-      const res = await fetch('/api/v1/iuran', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pemain_id: p.id,
-          periode_tahun: currentDate.getFullYear(),
-          periode_bulan: currentDate.getMonth() + 1,
-          status: 'gratis',
-          nominal: 0,
-        }),
-      });
-      const json = await res.json();
-      if (res.ok) {
-        addToast(`${p.nama} kini berstatus Member (Gratis) untuk bulan ini`, 'success');
-        fetchPemain(search, page);
-      } else {
-        addToast(json.message ?? 'Gagal mencatat membership', 'error');
-      }
-    } catch {
-      addToast('Terjadi kesalahan jaringan', 'error');
-    } finally {
-      setActionLoadingId(null);
-    }
+  const handleQuickTanpaBayar = (p: Pemain) => {
+    setConfirmDialog({
+      open: true,
+      title: 'Member Gratis (Tanpa Bayar)',
+      description: `Jadikan "${p.nama}" sebagai Member Gratis (Tanpa Bayar) untuk bulan ini?`,
+      confirmLabel: 'Ya, Jadikan Member',
+      destructive: false,
+      onConfirm: async () => {
+        setActionLoadingId(p.id);
+        const currentDate = new Date();
+        try {
+          const res = await fetch('/api/v1/iuran', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              pemain_id: p.id,
+              periode_tahun: currentDate.getFullYear(),
+              periode_bulan: currentDate.getMonth() + 1,
+              status: 'gratis',
+              nominal: 0,
+            }),
+          });
+          const json = await res.json();
+          if (res.ok) {
+            addToast(`${p.nama} kini berstatus Member (Gratis) untuk bulan ini`, 'success');
+            fetchPemain(search, page);
+          } else {
+            addToast(json.message ?? 'Gagal mencatat membership', 'error');
+          }
+        } catch {
+          addToast('Terjadi kesalahan jaringan', 'error');
+        } finally {
+          setActionLoadingId(null);
+        }
+      },
+    });
   };
 
   // Lunasi Iuran (Bayar Nanti -> Lunas)
-  const handleLunasiIuran = async (p: Pemain) => {
+  const handleLunasiIuran = (p: Pemain) => {
     if (!p.iuran_id) return;
-    const confirmAction = window.confirm(
-      `Konfirmasi pelunasan iuran untuk ${p.nama} (${formatRupiah(p.iuran_nominal ?? 50000)})? Uang akan dicatat masuk ke kas grup.`
-    );
-    if (!confirmAction) return;
-
-    setActionLoadingId(p.id);
-    try {
-      const res = await fetch(`/api/v1/iuran/${p.iuran_id}/bayar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const json = await res.json();
-      if (res.ok) {
-        addToast(`Iuran ${p.nama} berhasil dilunasi & dicatat ke kas!`, 'success');
-        fetchPemain(search, page);
-      } else {
-        addToast(json.message ?? 'Gagal melunasi iuran', 'error');
-      }
-    } catch {
-      addToast('Terjadi kesalahan jaringan', 'error');
-    } finally {
-      setActionLoadingId(null);
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Konfirmasi Pelunasan Iuran',
+      description: `Konfirmasi pelunasan iuran untuk ${p.nama} (${formatRupiah(p.iuran_nominal ?? 50000)})? Uang akan dicatat masuk ke kas grup.`,
+      confirmLabel: 'Ya, Lunaskan',
+      destructive: false,
+      onConfirm: async () => {
+        setActionLoadingId(p.id);
+        try {
+          const res = await fetch(`/api/v1/iuran/${p.iuran_id}/bayar`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          const json = await res.json();
+          if (res.ok) {
+            addToast(`Iuran ${p.nama} berhasil dilunasi & dicatat ke kas!`, 'success');
+            fetchPemain(search, page);
+          } else {
+            addToast(json.message ?? 'Gagal melunasi iuran', 'error');
+          }
+        } catch {
+          addToast('Terjadi kesalahan jaringan', 'error');
+        } finally {
+          setActionLoadingId(null);
+        }
+      },
+    });
   };
 
   // Batalkan Membership / Iuran
-  const handleBatalIuran = async (p: Pemain) => {
+  const handleBatalIuran = (p: Pemain) => {
     if (!p.iuran_id) return;
-    const confirmAction = window.confirm(
-      `Batalkan membership ${p.nama} untuk bulan ini? Status akan kembali menjadi Non-Member.`
-    );
-    if (!confirmAction) return;
-
-    setActionLoadingId(p.id);
-    try {
-      const res = await fetch(`/api/v1/iuran/${p.iuran_id}`, {
-        method: 'DELETE',
-      });
-      const json = await res.json();
-      if (res.ok) {
-        addToast(`Membership ${p.nama} berhasil dibatalkan`, 'success');
-        fetchPemain(search, page);
-      } else {
-        addToast(json.message ?? 'Gagal membatalkan membership', 'error');
-      }
-    } catch {
-      addToast('Terjadi kesalahan jaringan', 'error');
-    } finally {
-      setActionLoadingId(null);
-    }
+    setConfirmDialog({
+      open: true,
+      title: 'Batalkan Membership',
+      description: `Batalkan membership ${p.nama} untuk bulan ini? Status akan kembali menjadi Non-Member.`,
+      confirmLabel: 'Batalkan Membership',
+      destructive: true,
+      onConfirm: async () => {
+        setActionLoadingId(p.id);
+        try {
+          const res = await fetch(`/api/v1/iuran/${p.iuran_id}`, {
+            method: 'DELETE',
+          });
+          const json = await res.json();
+          if (res.ok) {
+            addToast(`Membership ${p.nama} berhasil dibatalkan`, 'success');
+            fetchPemain(search, page);
+          } else {
+            addToast(json.message ?? 'Gagal membatalkan membership', 'error');
+          }
+        } catch {
+          addToast('Terjadi kesalahan jaringan', 'error');
+        } finally {
+          setActionLoadingId(null);
+        }
+      },
+    });
   };
 
   const handleSimpanIuran = async () => {
@@ -625,6 +649,28 @@ export default function PemainPage() {
           </div>
         </div>
       </BottomSheet>
+
+      {/* Confirm Popup Dialog */}
+      {confirmDialog && (
+        <ConfirmDialog
+          open={confirmDialog.open}
+          onClose={() => setConfirmDialog(null)}
+          onConfirm={async () => {
+            setConfirmLoading(true);
+            try {
+              await confirmDialog.onConfirm();
+              setConfirmDialog(null);
+            } finally {
+              setConfirmLoading(false);
+            }
+          }}
+          title={confirmDialog.title}
+          description={confirmDialog.description}
+          confirmLabel={confirmDialog.confirmLabel}
+          destructive={confirmDialog.destructive}
+          loading={confirmLoading}
+        />
+      )}
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>

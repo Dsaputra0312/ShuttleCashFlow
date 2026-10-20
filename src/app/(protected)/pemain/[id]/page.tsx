@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { CurrencyInput } from '@/components/ui/CurrencyInput';
@@ -77,6 +78,8 @@ function PemainDetailPageInner() {
   const [iuranLoading, setIuranLoading] = useState(false);
   const [iuranError, setIuranError] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [confirmIuranTarget, setConfirmIuranTarget] = useState<IuranRow | null>(null);
+  const [confirmIuranLoading, setConfirmIuranLoading] = useState(false);
 
   const fetchPemain = useCallback(async () => {
     try {
@@ -355,7 +358,7 @@ function PemainDetailPageInner() {
                   {i.status === 'bayar_nanti' && (
                     <button
                       type="button"
-                      onClick={() => handleLunasiIuran(i.id)}
+                      onClick={() => setConfirmIuranTarget(i)}
                       disabled={actionLoadingId === i.id}
                       className="px-2.5 py-1 text-caption font-semibold rounded-lg bg-warning text-white hover:bg-warning/90 shadow-card transition-colors disabled:opacity-50"
                     >
@@ -516,6 +519,26 @@ function PemainDetailPageInner() {
           </div>
         </div>
       </BottomSheet>
+
+      {/* Confirm Pelunasan Dialog */}
+      <ConfirmDialog
+        open={!!confirmIuranTarget}
+        onClose={() => setConfirmIuranTarget(null)}
+        onConfirm={async () => {
+          if (!confirmIuranTarget) return;
+          setConfirmIuranLoading(true);
+          try {
+            await handleLunasiIuran(confirmIuranTarget.id);
+            setConfirmIuranTarget(null);
+          } finally {
+            setConfirmIuranLoading(false);
+          }
+        }}
+        title="Konfirmasi Pelunasan Iuran"
+        description={`Konfirmasi pelunasan iuran untuk ${pemain?.nama} (${formatRupiah(confirmIuranTarget?.nominal ?? 0)})? Uang akan dicatat masuk ke kas grup.`}
+        confirmLabel="Ya, Lunaskan"
+        loading={confirmIuranLoading}
+      />
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>

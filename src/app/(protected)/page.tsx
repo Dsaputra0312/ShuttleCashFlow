@@ -2,20 +2,26 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CalendarPlus, Wallet } from 'lucide-react';
+import {
+  CalendarPlus,
+  Wallet,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Share2,
+  FileText,
+} from 'lucide-react';
 import { formatRupiah } from '@/lib/money';
 import { HeroCard } from '@/components/ui/HeroCard';
-import { SelectorCard } from '@/components/ui/SelectorCard';
 import { QuickActions } from '@/components/ui/QuickActions';
 import { Section } from '@/components/ui/Section';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Timeline } from '@/components/ui/Timeline';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Tabs } from '@/components/ui/Tabs';
-import { Badge } from '@/components/ui/Badge';
-import { StatTile } from '@/components/ui/StatTile';
+import { Button } from '@/components/ui/Button';
 import { BarChart } from '@/components/ui/BarChart';
 import { ShuttlecockIcon } from '@/components/ui/ShuttlecockIcon';
+import { RekapWhatsAppSheet } from '@/components/pertemuan/RekapWhatsAppSheet';
 
 type Filter = 'harian' | 'bulanan';
 
@@ -27,12 +33,26 @@ interface TransaksiItem {
   dibuat_pada: string;
 }
 
+interface RincianItem {
+  deskripsi: string;
+  nominal: number;
+}
+
 interface RingkasanPertemuan {
   id: string;
   tanggal: string;
   terkunci: boolean;
   jumlah_pemain: number;
+  jumlah_sesi?: number;
+  total_bola?: number;
   total_tagihan: number;
+  total_dibayar?: number;
+  pemasukan: number;
+  pengeluaran: number;
+  saldo_sebelum: number;
+  saldo_saat_ini: number;
+  rincian_pemasukan?: RincianItem[];
+  rincian_pengeluaran?: RincianItem[];
 }
 
 interface BarChartDataItem {
@@ -61,6 +81,86 @@ function formatTanggalPendek(dateStr: string): string {
     month: 'short',
     year: 'numeric',
   });
+}
+
+function formatTanggalLengkap(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function generateLaporanPertemuanText(pt: RingkasanPertemuan): string {
+  const lines: string[] = [];
+  lines.push('🏸 *LAPORAN KAS PERTEMUAN TERAKHIR*');
+  lines.push(`📅 ${formatTanggalLengkap(pt.tanggal)}`);
+  lines.push('');
+  lines.push(`💰 *Saldo Sebelumnya:* ${formatRupiah(pt.saldo_sebelum)}`);
+  lines.push('');
+
+  // Rincian Pemasukan
+  lines.push(`📥 *Pemasukan:* +${formatRupiah(pt.pemasukan)}`);
+  if (pt.rincian_pemasukan && pt.rincian_pemasukan.length > 0) {
+    pt.rincian_pemasukan.forEach((item) => {
+      lines.push(`   • ${item.deskripsi}: ${formatRupiah(item.nominal)}`);
+    });
+    if (
+      pt.total_tagihan > 0 &&
+      pt.total_dibayar !== undefined &&
+      pt.total_dibayar < pt.total_tagihan
+    ) {
+      lines.push(
+        `   _(Total Tagihan: ${formatRupiah(pt.total_tagihan)} | Masuk Kas: ${formatRupiah(
+          pt.total_dibayar
+        )} | Belum Lunas: ${formatRupiah(pt.total_tagihan - pt.total_dibayar)})_`
+      );
+    }
+  } else {
+    lines.push('   • _(Tidak ada pemasukan)_: Rp 0');
+  }
+  lines.push('');
+
+  // Rincian Pengeluaran
+  lines.push(`📤 *Pengeluaran:* -${formatRupiah(pt.pengeluaran)}`);
+  if (pt.rincian_pengeluaran && pt.rincian_pengeluaran.length > 0) {
+    pt.rincian_pengeluaran.forEach((item) => {
+      lines.push(`   • ${item.deskripsi}: ${formatRupiah(item.nominal)}`);
+    });
+  } else {
+    lines.push('   • _(Tidak ada pengeluaran)_: Rp 0');
+  }
+  lines.push('');
+
+  lines.push('────────────────────────');
+  lines.push(`💵 *Saldo Kas Saat Ini:* *${formatRupiah(pt.saldo_saat_ini)}*`);
+
+  if (pt.jumlah_pemain > 0) {
+    lines.push('');
+    lines.push('*Rincian Mabar:*');
+    lines.push(`• Total Pemain: ${pt.jumlah_pemain} orang`);
+    if (pt.jumlah_sesi) {
+      lines.push(
+        `• Sesi Dimainkan: ${pt.jumlah_sesi} sesi (${pt.total_bola ?? 0} shuttlecock)`
+      );
+    }
+    if (pt.total_tagihan) {
+      const isLunas = (pt.total_dibayar ?? 0) >= pt.total_tagihan;
+      lines.push(
+        `• Tagihan Mabar: ${formatRupiah(pt.total_tagihan)} (${
+          isLunas ? 'Lunas' : `Terbayar: ${formatRupiah(pt.total_dibayar ?? 0)}`
+        })`
+      );
+    }
+  }
+
+  lines.push('');
+  lines.push('Salam kompak,');
+  lines.push('*ShuttleCashFlow*');
+
+  return lines.join('\n');
 }
 
 function formatWaktu(iso: string): string {
@@ -92,6 +192,16 @@ export default function BerandaPage() {
   const [bulan, setBulan] = useState<string>('');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Rekap WA Sheet
+  const [rekapSheetOpen, setRekapSheetOpen] = useState(false);
+  const [rekapTeks, setRekapTeks] = useState('');
+
+  const handleOpenRekap = (pt: RingkasanPertemuan) => {
+    const teks = generateLaporanPertemuanText(pt);
+    setRekapTeks(teks);
+    setRekapSheetOpen(true);
+  };
 
   // Initialise dates on client only to avoid Next.js prerender error
   useEffect(() => {
@@ -142,7 +252,7 @@ export default function BerandaPage() {
     {
       icon: CalendarPlus,
       tint: 'orange' as const,
-      label: 'Buat Pertemuan',
+      label: 'Pertemuan',
       onClick: () => router.push('/pertemuan'),
     },
     {
@@ -185,50 +295,25 @@ export default function BerandaPage() {
   const defaultChartData =
     filter === 'bulanan'
       ? [
-          { label: 'Mgg 1', pemasukan: 0, pengeluaran: 0 },
-          { label: 'Mgg 2', pemasukan: 0, pengeluaran: 0 },
-          { label: 'Mgg 3', pemasukan: 0, pengeluaran: 0 },
-          { label: 'Mgg 4+', pemasukan: 0, pengeluaran: 0 },
-        ]
+        { label: 'Mgg 1', pemasukan: 0, pengeluaran: 0 },
+        { label: 'Mgg 2', pemasukan: 0, pengeluaran: 0 },
+        { label: 'Mgg 3', pemasukan: 0, pengeluaran: 0 },
+        { label: 'Mgg 4+', pemasukan: 0, pengeluaran: 0 },
+      ]
       : [
-          { label: 'H-6', pemasukan: 0, pengeluaran: 0 },
-          { label: 'H-5', pemasukan: 0, pengeluaran: 0 },
-          { label: 'H-4', pemasukan: 0, pengeluaran: 0 },
-          { label: 'H-3', pemasukan: 0, pengeluaran: 0 },
-          { label: 'H-2', pemasukan: 0, pengeluaran: 0 },
-          { label: 'Kemarin', pemasukan: 0, pengeluaran: 0 },
-          { label: 'Hari ini', pemasukan: 0, pengeluaran: 0 },
-        ];
+        { label: 'H-6', pemasukan: 0, pengeluaran: 0 },
+        { label: 'H-5', pemasukan: 0, pengeluaran: 0 },
+        { label: 'H-4', pemasukan: 0, pengeluaran: 0 },
+        { label: 'H-3', pemasukan: 0, pengeluaran: 0 },
+        { label: 'H-2', pemasukan: 0, pengeluaran: 0 },
+        { label: 'Kemarin', pemasukan: 0, pengeluaran: 0 },
+        { label: 'Hari ini', pemasukan: 0, pengeluaran: 0 },
+      ];
 
   return (
     <div>
-      {/* Selector Card — grup info */}
-      <Section>
-        <SelectorCard
-          name="ShuttleCashFlow"
-          subtitle={
-            pertemuanTerakhir
-              ? `Pertemuan terakhir: ${formatTanggalPendek(pertemuanTerakhir.tanggal)}`
-              : 'Belum ada pertemuan'
-          }
-          badge={
-            pertemuanTerakhir ? (
-              <Badge
-                label={pertemuanTerakhir.terkunci ? 'Terkunci' : 'Aktif'}
-                variant={pertemuanTerakhir.terkunci ? 'terkunci' : 'aktif'}
-              />
-            ) : undefined
-          }
-          onClick={
-            pertemuanTerakhir
-              ? () => router.push(`/pertemuan/${pertemuanTerakhir.id}`)
-              : undefined
-          }
-        />
-      </Section>
-
       {/* Filter toggle + date picker */}
-      <Section className="pt-0">
+      <Section>
         <div className="flex items-center gap-3">
           <Tabs
             tabs={[
@@ -276,20 +361,181 @@ export default function BerandaPage() {
       {/* Ringkasan Arus Kas Masuk vs Keluar Periode Ini */}
       <Section className="pt-0">
         <div className="grid grid-cols-2 gap-3">
-          <StatTile
-            label={`Pemasukan (${filter === 'harian' ? 'Hari Ini' : 'Bulan Ini'})`}
-            value={`+${formatRupiah(data?.total_pemasukan ?? 0)}`}
-            hint="Total uang masuk"
-            className="!border-emerald-200/60 !bg-emerald-50/40 text-emerald-700"
-          />
-          <StatTile
-            label={`Pengeluaran (${filter === 'harian' ? 'Hari Ini' : 'Bulan Ini'})`}
-            value={`-${formatRupiah(data?.total_pengeluaran ?? 0)}`}
-            hint="Total uang keluar"
-            className="!border-pink-200/60 !bg-pink-50/40 text-danger"
-          />
+          <div
+            className="rounded-2xl border border-emerald-200/70 bg-emerald-50/50 shadow-xs p-3.5 flex flex-col items-center justify-center text-center gap-1.5 transition-all"
+            aria-label="Pemasukan"
+          >
+            <span className="text-title font-bold text-emerald-700 nums leading-none">
+              +{formatRupiah(data?.total_pemasukan ?? 0)}
+            </span>
+            <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shadow-2xs">
+              <ArrowDownLeft className="w-4 h-4" strokeWidth={2.5} />
+            </div>
+          </div>
+
+          <div
+            className="rounded-2xl border border-pink-200/70 bg-pink-50/50 shadow-xs p-3.5 flex flex-col items-center justify-center text-center gap-1.5 transition-all"
+            aria-label="Pengeluaran"
+          >
+            <span className="text-title font-bold text-danger nums leading-none">
+              -{formatRupiah(data?.total_pengeluaran ?? 0)}
+            </span>
+            <div className="w-7 h-7 rounded-full bg-pink-100 flex items-center justify-center text-danger shadow-2xs">
+              <ArrowUpRight className="w-4 h-4" strokeWidth={2.5} />
+            </div>
+          </div>
         </div>
       </Section>
+
+      {/* Laporan Kas Pertemuan Terakhir */}
+      {pertemuanTerakhir && (
+        <Section className="pt-0">
+          <div className="bg-surface rounded-2xl border border-line shadow-card p-4 flex flex-col gap-3.5">
+            {/* Header Card */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-heading font-bold text-ink-900 text-[15px] leading-tight">
+                    Laporan Pertemuan Terakhir
+                  </h3>
+                  <p className="text-caption text-ink-500 mt-0.5">
+                    {formatTanggalLengkap(pertemuanTerakhir.tanggal)}
+                  </p>
+                </div>
+              </div>
+
+              <span
+                className={`px-2.5 py-1 rounded-full text-caption font-semibold ${pertemuanTerakhir.terkunci
+                    ? 'bg-ink-100 text-ink-700'
+                    : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  }`}
+              >
+                {pertemuanTerakhir.terkunci ? 'Terkunci' : 'Aktif'}
+              </span>
+            </div>
+
+            {/* 4 Financial Report Metrics */}
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* 1. Saldo Sebelum Pertemuan Terakhir */}
+              <div className="bg-peach-50/70 rounded-xl border border-line/60 p-2.5 flex flex-col gap-0.5">
+                <span className="text-[11px] font-medium text-ink-500">Saldo Sebelum</span>
+                <span className="text-body font-bold text-ink-800 nums truncate">
+                  {formatRupiah(pertemuanTerakhir.saldo_sebelum)}
+                </span>
+              </div>
+
+              {/* 2. Jumlah Pemasukan Pertemuan Terakhir */}
+              <div className="bg-emerald-50/60 rounded-xl border border-emerald-200/60 p-2.5 flex flex-col gap-0.5">
+                <span className="text-[11px] font-medium text-emerald-700">Pemasukan</span>
+                <span className="text-body font-bold text-emerald-700 nums truncate">
+                  +{formatRupiah(pertemuanTerakhir.pemasukan)}
+                </span>
+              </div>
+
+              {/* 3. Jumlah Pengeluaran Pertemuan Terakhir */}
+              <div className="bg-pink-50/60 rounded-xl border border-pink-200/60 p-2.5 flex flex-col gap-0.5">
+                <span className="text-[11px] font-medium text-danger">Pengeluaran</span>
+                <span className="text-body font-bold text-danger nums truncate">
+                  -{formatRupiah(pertemuanTerakhir.pengeluaran)}
+                </span>
+              </div>
+
+              {/* 4. Saldo Saat Ini */}
+              <div className="bg-primary-50/60 rounded-xl border border-primary-200/60 p-2.5 flex flex-col gap-0.5">
+                <span className="text-[11px] font-semibold text-primary-700">Saldo Saat Ini</span>
+                <span className="text-body font-extrabold text-primary-700 nums truncate">
+                  {formatRupiah(pertemuanTerakhir.saldo_saat_ini)}
+                </span>
+              </div>
+            </div>
+
+            {/* Breakdown Rincian Pemasukan & Pengeluaran */}
+            <div className="flex flex-col gap-2.5 pt-2 border-t border-line/60">
+              {/* Rincian Pemasukan */}
+              <div className="rounded-xl bg-emerald-50/50 border border-emerald-100/80 p-2.5 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-emerald-800">
+                  <span className="flex items-center gap-1">
+                    <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
+                    Rincian Pemasukan
+                  </span>
+                  <span className="nums">+{formatRupiah(pertemuanTerakhir.pemasukan)}</span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  {pertemuanTerakhir.rincian_pemasukan && pertemuanTerakhir.rincian_pemasukan.length > 0 ? (
+                    pertemuanTerakhir.rincian_pemasukan.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-caption text-ink-700">
+                        <span className="text-ink-600 flex items-center gap-1.5 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="truncate">{item.deskripsi}</span>
+                        </span>
+                        <span className="font-semibold text-ink-900 nums shrink-0 pl-2">
+                          {formatRupiah(item.nominal)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-caption text-ink-400 italic">Belum ada pemasukan</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Rincian Pengeluaran */}
+              <div className="rounded-xl bg-pink-50/50 border border-pink-100/80 p-2.5 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-danger">
+                  <span className="flex items-center gap-1">
+                    <ArrowUpRight className="w-3.5 h-3.5 text-danger" />
+                    Rincian Pengeluaran
+                  </span>
+                  <span className="nums">-{formatRupiah(pertemuanTerakhir.pengeluaran)}</span>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  {pertemuanTerakhir.rincian_pengeluaran && pertemuanTerakhir.rincian_pengeluaran.length > 0 ? (
+                    pertemuanTerakhir.rincian_pengeluaran.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-caption text-ink-700">
+                        <span className="text-ink-600 flex items-center gap-1.5 truncate">
+                          <span className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0" />
+                          <span className="truncate">{item.deskripsi}</span>
+                        </span>
+                        <span className="font-semibold text-danger nums shrink-0 pl-2">
+                          -{formatRupiah(item.nominal)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-caption text-ink-400 italic">Belum ada pengeluaran dicatat (Rp 0)</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 pt-1 border-t border-line/50">
+              <Button
+                variant="primary"
+                size="sm"
+                className="flex-1 !h-10 font-bold !bg-emerald-600 hover:!bg-emerald-700 !text-white text-xs"
+                onClick={() => handleOpenRekap(pertemuanTerakhir)}
+              >
+                <Share2 className="w-3.5 h-3.5 mr-1.5" />
+                Bagikan Laporan (WA)
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="!h-10 text-xs font-semibold px-3"
+                onClick={() => router.push(`/pertemuan/${pertemuanTerakhir.id}`)}
+              >
+                Detail
+              </Button>
+            </div>
+          </div>
+        </Section>
+      )}
 
       {/* Visual BarChart Arus Kas */}
       <Section className="pt-0">
@@ -352,6 +598,13 @@ export default function BerandaPage() {
           <Timeline items={timelineItems} />
         )}
       </Section>
+
+      {/* Rekap WhatsApp Sheet */}
+      <RekapWhatsAppSheet
+        open={rekapSheetOpen}
+        onClose={() => setRekapSheetOpen(false)}
+        teks={rekapTeks}
+      />
     </div>
   );
 }

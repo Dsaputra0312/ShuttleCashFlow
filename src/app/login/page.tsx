@@ -52,12 +52,13 @@ export default function LoginPage() {
         <div className="mb-8 text-center flex flex-col items-center">
           <div className="relative mb-4 h-20 w-20 overflow-hidden rounded-2xl shadow-card bg-surface p-1">
             <Image
-              src="/icons/logo.png"
+              src="/icons/app-logo.png?v=2"
               alt="ShuttleCashFlow Logo"
               width={80}
               height={80}
               className="h-full w-full object-contain rounded-xl"
               priority
+              unoptimized
             />
           </div>
           <h1 className="text-title-lg font-title-lg text-ink-900">ShuttleCashFlow</h1>
