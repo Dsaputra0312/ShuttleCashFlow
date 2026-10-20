@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -21,6 +24,7 @@ const changePasswordSchema = z
 type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
 
 export default function UbahKataSandiPage() {
+  const router = useRouter();
   const { toasts, addToast, dismiss } = useToast();
   const [form, setForm] = useState<ChangePasswordForm>({
     current_password: '',
@@ -80,50 +84,57 @@ export default function UbahKataSandiPage() {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold text-neutral-900 mb-4">Ubah Kata Sandi</h1>
+    <div>
+      <PageHeader
+        title="Ubah Kata Sandi"
+        onBack={() => router.push('/lainnya')}
+      />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <Input
-          label="Password Saat Ini"
-          type="password"
-          value={form.current_password}
-          onChange={handleChange('current_password')}
-          error={errors.current_password}
-          placeholder="Password saat ini"
-          autoComplete="current-password"
-        />
-        <Input
-          label="Password Baru"
-          type="password"
-          value={form.new_password}
-          onChange={handleChange('new_password')}
-          error={errors.new_password}
-          placeholder="Minimal 8 karakter"
-          autoComplete="new-password"
-        />
-        <Input
-          label="Konfirmasi Password Baru"
-          type="password"
-          value={form.confirm_password}
-          onChange={handleChange('confirm_password')}
-          error={errors.confirm_password}
-          placeholder="Ulangi password baru"
-          autoComplete="new-password"
-        />
+      <div className="p-4 max-w-xl mx-auto">
+        <Card padding>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Input
+              label="Password Saat Ini"
+              type="password"
+              value={form.current_password}
+              onChange={handleChange('current_password')}
+              error={errors.current_password}
+              placeholder="Password saat ini"
+              autoComplete="current-password"
+            />
+            <Input
+              label="Password Baru"
+              type="password"
+              value={form.new_password}
+              onChange={handleChange('new_password')}
+              error={errors.new_password}
+              placeholder="Minimal 8 karakter"
+              autoComplete="new-password"
+            />
+            <Input
+              label="Konfirmasi Password Baru"
+              type="password"
+              value={form.confirm_password}
+              onChange={handleChange('confirm_password')}
+              error={errors.confirm_password}
+              placeholder="Ulangi password baru"
+              autoComplete="new-password"
+            />
 
-        {serverError && (
-          <p className="text-sm text-danger-600" role="alert">
-            {serverError}
-          </p>
-        )}
+            {serverError && (
+              <p className="text-caption text-danger" role="alert">
+                {serverError}
+              </p>
+            )}
 
-        <Button type="submit" loading={loading} className="w-full mt-2">
-          Simpan Password Baru
-        </Button>
-      </form>
+            <Button type="submit" loading={loading} className="w-full mt-2">
+              Simpan Password Baru
+            </Button>
+          </form>
+        </Card>
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      </div>
     </div>
   );
 }

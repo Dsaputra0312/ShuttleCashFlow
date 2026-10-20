@@ -1,10 +1,15 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { ListRow } from '@/components/ui/ListRow';
+import { Avatar } from '@/components/ui/Avatar';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
@@ -28,6 +33,7 @@ const addAdminSchema = z.object({
 type AddAdminForm = z.infer<typeof addAdminSchema>;
 
 export default function AdminPage() {
+  const router = useRouter();
   const { toasts, addToast, dismiss } = useToast();
   const [admins, setAdmins] = useState<AdminData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,6 +42,9 @@ export default function AdminPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof AddAdminForm, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const [deactivatingAdmin, setDeactivatingAdmin] = useState<{ id: string; nama: string } | null>(null);
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
 
   const fetchAdmins = useCallback(async () => {
     setLoading(true);
@@ -50,9 +59,6 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, [addToast]);
-
-  const [deactivatingAdmin, setDeactivatingAdmin] = useState<{ id: string; nama: string } | null>(null);
-  const [deactivateLoading, setDeactivateLoading] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -134,92 +140,113 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-neutral-900">Admin</h1>
-        <Button size="sm" onClick={handleOpenAdd}>+ Tambah</Button>
-      </div>
+    <div>
+      <PageHeader
+        title="Admin"
+        onBack={() => router.push('/lainnya')}
+        action={
+          <Button size="sm" onClick={handleOpenAdd}>
+            Tambah
+          </Button>
+        }
+      />
 
-      {loading && <SkeletonList count={3} />}
+      <div className="p-4 max-w-xl mx-auto">
+        {loading && <SkeletonList count={3} />}
 
-      {!loading && admins.length === 0 && (
-        <EmptyState
-          message="Belum ada admin"
-          hint="Tekan tombol + Tambah untuk mengundang admin baru"
-        />
-      )}
+        {!loading && admins.length === 0 && (
+          <EmptyState
+            message="Belum ada admin"
+            hint="Tekan tombol Tambah untuk mengundang admin baru"
+          />
+        )}
 
-      <div className="flex flex-col gap-3">
-        {admins.map((a) => (
-          <div
-            key={a.id}
-            className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-neutral-900 truncate">{a.nama}</p>
-                <p className="text-sm text-neutral-500 truncate">{a.email}</p>
-              </div>
-              <Badge label={a.aktif ? 'Aktif' : 'Nonaktif'} variant={a.aktif ? 'success' : 'default'} />
-            </div>
-            {a.aktif && (
-              <Button
-                variant="danger"
-                size="sm"
-                className="mt-3 w-full"
-                onClick={() => setDeactivatingAdmin({ id: a.id, nama: a.nama })}
-              >
-                Nonaktifkan
-              </Button>
+        {!loading && admins.length > 0 && (
+          <div className="flex flex-col gap-2.5">
+            {admins.map((a) => (
+              <ListRow
+                key={a.id}
+                left={<Avatar name={a.nama} size="md" />}
+                title={a.nama}
+                subtitle={a.email}
+                right={
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      label={a.aktif ? 'Aktif' : 'Nonaktif'}
+                      variant={a.aktif ? 'aktif' : 'non-aktif'}
+                    />
+                    {a.aktif && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeactivatingAdmin({ id: a.id, nama: a.nama })}
+                      >
+                        Nonaktifkan
+                      </Button>
+                    )}
+                  </div>
+                }
+              />
+            ))}
+          </div>
+        )}
+
+        <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Tambah Admin">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Input
+              label="Nama"
+              value={form.nama}
+              onChange={handleChange('nama')}
+              error={errors.nama}
+              placeholder="Nama admin"
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={form.email}
+              onChange={handleChange('email')}
+              error={errors.email}
+              placeholder="email@contoh.com"
+            />
+            <Input
+              label="Password"
+              type="password"
+              value={form.password}
+              onChange={handleChange('password')}
+              error={errors.password}
+              placeholder="Minimal 8 karakter"
+            />
+            {serverError && (
+              <p className="text-caption text-danger" role="alert">
+                {serverError}
+              </p>
             )}
-          </div>
-        ))}
+            <div className="flex gap-3 mt-1">
+              <Button type="button" variant="ghost" onClick={() => setSheetOpen(false)} className="flex-1">
+                Batal
+              </Button>
+              <Button type="submit" loading={submitting} className="flex-1">
+                Tambah
+              </Button>
+            </div>
+          </form>
+        </BottomSheet>
+
+        {/* Confirmation dialog for deactivating admin */}
+        <ConfirmDialog
+          open={!!deactivatingAdmin}
+          onClose={() => setDeactivatingAdmin(null)}
+          onConfirm={handleDeactivate}
+          title="Nonaktifkan Admin"
+          description={`Apakah Anda yakin ingin menonaktifkan admin "${deactivatingAdmin?.nama}"? Admin tidak akan dapat masuk kembali ke sistem.`}
+          confirmLabel="Nonaktifkan"
+          cancelLabel="Batal"
+          destructive
+          loading={deactivateLoading}
+        />
+
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
       </div>
-
-      <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Tambah Admin">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input label="Nama" value={form.nama} onChange={handleChange('nama')} error={errors.nama} placeholder="Nama admin" />
-          <Input label="Email" type="email" value={form.email} onChange={handleChange('email')} error={errors.email} placeholder="email@contoh.com" />
-          <Input label="Password" type="password" value={form.password} onChange={handleChange('password')} error={errors.password} placeholder="Minimal 8 karakter" />
-          {serverError && <p className="text-sm text-danger-600" role="alert">{serverError}</p>}
-          <div className="flex gap-3">
-            <Button type="button" variant="secondary" onClick={() => setSheetOpen(false)} className="flex-1">Batal</Button>
-            <Button type="submit" loading={submitting} className="flex-1">Tambah</Button>
-          </div>
-        </form>
-      </BottomSheet>
-
-      {/* Confirmation BottomSheet for deactivating admin */}
-      <BottomSheet
-        open={!!deactivatingAdmin}
-        onClose={() => setDeactivatingAdmin(null)}
-        title="Nonaktifkan Admin"
-      >
-        <div className="p-4 space-y-4">
-          <p className="text-sm text-neutral-600">
-            Apakah Anda yakin ingin menonaktifkan admin &quot;{deactivatingAdmin?.nama}&quot;? Admin tidak akan dapat masuk kembali ke sistem.
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={() => setDeactivatingAdmin(null)}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="danger"
-              className="flex-1"
-              loading={deactivateLoading}
-              onClick={handleDeactivate}
-            >
-              Nonaktifkan
-            </Button>
-          </div>
-        </div>
-      </BottomSheet>
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }

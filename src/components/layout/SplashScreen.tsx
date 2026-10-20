@@ -47,7 +47,7 @@ export function SplashScreen() {
   return (
     <div
       onClick={handleDismiss}
-      className={`fixed inset-0 z-[99999] flex items-center justify-center bg-white transition-opacity duration-300 select-none cursor-pointer ${
+      className={`fixed inset-0 z-[99999] flex items-center justify-center bg-peach-50 transition-opacity duration-300 select-none cursor-pointer ${
         isFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
       role="dialog"

@@ -1,16 +1,18 @@
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
+import { AppIcon } from './AppIcon';
 import { Button } from './Button';
 
 interface ErrorStateProps {
-  /** Error message to show */
+  /** Pesan error yang ditampilkan */
   message?: string;
-  /** Optional retry callback */
+  /** Callback untuk mencoba lagi */
   onRetry?: () => void;
 }
 
 /**
- * Displayed in list/detail pages when an API request fails.
- * Accessible: uses role="alert" so screen readers announce the error.
+ * Tampilan saat request API gagal. Menggunakan ikon Lucide AlertCircle — tidak ada emoji.
+ * Accessible: role="alert" agar screen reader mengumumkan error.
  */
 export function ErrorState({
   message = 'Terjadi kesalahan saat memuat data.',
@@ -21,8 +23,10 @@ export function ErrorState({
       role="alert"
       className="flex flex-col items-center justify-center py-12 text-center"
     >
-      <span className="text-4xl mb-3" aria-hidden="true">⚠️</span>
-      <p className="text-sm font-medium text-danger-600">{message}</p>
+      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-danger-tonal text-danger">
+        <AppIcon icon={AlertCircle} size="md" strokeWidth={1.5} />
+      </div>
+      <p className="text-body font-medium text-danger">{message}</p>
       {onRetry && (
         <Button
           variant="secondary"

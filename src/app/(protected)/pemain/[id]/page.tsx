@@ -6,11 +6,15 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Input } from '@/components/ui/Input';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Avatar } from '@/components/ui/Avatar';
+import { ListRow } from '@/components/ui/ListRow';
 import { PemainForm, type PemainFormValues } from '@/components/pemain/PemainForm';
 import { formatRupiah } from '@/lib/money';
 
@@ -74,6 +78,8 @@ function PemainDetailPageInner() {
   const [iuranLoading, setIuranLoading] = useState(false);
   const [iuranError, setIuranError] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [confirmIuranTarget, setConfirmIuranTarget] = useState<IuranRow | null>(null);
+  const [confirmIuranLoading, setConfirmIuranLoading] = useState(false);
 
   const fetchPemain = useCallback(async () => {
     try {
@@ -208,7 +214,7 @@ function PemainDetailPageInner() {
 
   if (loading) {
     return (
-      <div className="p-4">
+      <div className="px-5 py-4">
         <SkeletonList count={3} />
       </div>
     );
@@ -216,9 +222,9 @@ function PemainDetailPageInner() {
 
   if (!pemain) {
     return (
-      <div className="p-4">
-        <p className="text-neutral-500">Pemain tidak ditemukan.</p>
-        <Link href="/pemain" className="text-primary-600 text-sm mt-2 inline-block">
+      <div className="px-5 py-4">
+        <p className="text-body text-ink-400">Pemain tidak ditemukan.</p>
+        <Link href="/pemain" className="text-primary-700 text-body mt-2 inline-block">
           ← Kembali
         </Link>
       </div>
@@ -228,165 +234,168 @@ function PemainDetailPageInner() {
   const pemainAsFormValues: PemainFormValues = pemain;
 
   return (
-    <div className="p-4">
-      {/* Back */}
-      <button
-        type="button"
-        onClick={() => router.push('/pemain')}
-        className="text-primary-600 text-sm mb-3"
-      >
-        ← Kembali
-      </button>
+    <div>
+      <PageHeader
+        title={pemain.nama}
+        onBack={() => router.push('/pemain')}
+      />
 
-      {/* Profile card */}
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4 mb-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-neutral-900">{pemain.nama}</h1>
-            {pemain.no_hp && (
-              <p className="text-sm text-neutral-500 mt-0.5">{pemain.no_hp}</p>
-            )}
-            {pemain.catatan && (
-              <p className="text-sm text-neutral-400 mt-1 italic">{pemain.catatan}</p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1 items-end">
-            {pemain.bebas_biaya && <Badge label="Bebas Biaya" variant="info" />}
-            {isMemberThisMonth ? (
-              memberStatusThisMonth === 'bayar_nanti' ? (
-                <Badge label="Member (Bayar Nanti)" variant="warning" />
-              ) : memberStatusThisMonth === 'gratis' ? (
-                <Badge label="Member (Gratis)" variant="info" />
-              ) : (
-                <Badge label="Member" variant="success" />
-              )
-            ) : (
-              <Badge label="Non-Member" variant="default" />
-            )}
-          </div>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="mt-3 w-full"
-          onClick={() => setEditOpen(true)}
-        >
-          Edit Pemain
-        </Button>
-      </div>
-
-      {/* Iuran section */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="font-semibold text-neutral-900">Riwayat Iuran</h2>
-        <Button
-          size="sm"
-          onClick={async () => {
-            const currentDate = new Date();
-            setIuranTahun(currentDate.getFullYear());
-            setIuranBulan(currentDate.getMonth() + 1);
-            setIuranStatusMode('lunas');
-            setIuranError(null);
-            try {
-              const confRes = await fetch('/api/v1/konfigurasi');
-              const confJson = await confRes.json();
-              if (confRes.ok && confJson.data?.iuran_bulanan) {
-                setIuranNominal(String(confJson.data.iuran_bulanan));
-              } else {
-                setIuranNominal('50000');
-              }
-            } catch {
-              setIuranNominal('50000');
-            }
-            setIuranOpen(true);
-          }}
-        >
-          + Catat Iuran
-        </Button>
-      </div>
-
-      {iuranList.length === 0 && (
-        <EmptyState
-          message="Belum ada iuran"
-          hint="Tekan tombol + Catat Iuran untuk mencatat iuran pemain"
-        />
-      )}
-
-      <div className="flex flex-col gap-2">
-        {iuranList.map((i) => (
-          <div
-            key={i.id}
-            className="flex items-center justify-between bg-white rounded-xl border border-neutral-200/90 shadow-sm p-3.5"
-          >
+      <div className="px-5 py-4 flex flex-col gap-4">
+        {/* Profile card */}
+        <div className="bg-surface rounded-2xl border border-line shadow-card p-5">
+          <div className="flex items-start gap-4">
+            <Avatar name={pemain.nama} size="lg" />
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-sm text-neutral-900">
-                  {BULAN[i.periode_bulan - 1]} {i.periode_tahun}
-                </p>
-                {i.status === 'bayar_nanti' ? (
-                  <Badge label="Bayar Nanti" variant="warning" />
-                ) : i.status === 'gratis' ? (
-                  <Badge label="Gratis" variant="info" />
+              <h2 className="text-title font-title text-ink-900">{pemain.nama}</h2>
+              {pemain.no_hp && (
+                <p className="text-body text-ink-600 mt-0.5">{pemain.no_hp}</p>
+              )}
+              {pemain.catatan && (
+                <p className="text-body text-ink-400 mt-1 italic">{pemain.catatan}</p>
+              )}
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {pemain.bebas_biaya && <Badge label="Bebas Biaya" variant="bebas-biaya" />}
+                {isMemberThisMonth ? (
+                  memberStatusThisMonth === 'bayar_nanti' ? (
+                    <Badge label="Member (Bayar Nanti)" variant="warning" />
+                  ) : memberStatusThisMonth === 'gratis' ? (
+                    <Badge label="Member (Gratis)" variant="info" />
+                  ) : (
+                    <Badge label="Member" variant="member" />
+                  )
                 ) : (
-                  <Badge label="Lunas" variant="success" />
+                  <Badge label="Non-Member" variant="non-member" />
                 )}
               </div>
-              <p className="text-xs text-neutral-500 mt-1">
-                {i.status === 'lunas' && i.dibayar_pada
-                  ? `Dibayar: ${new Date(i.dibayar_pada).toLocaleDateString('id-ID')}`
-                  : `Dicatat: ${new Date(i.dibuat_pada).toLocaleDateString('id-ID')}`}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <p
-                className={`font-bold text-sm ${
-                  i.status === 'gratis'
-                    ? 'text-purple-700'
-                    : i.status === 'bayar_nanti'
-                    ? 'text-amber-700'
-                    : 'text-emerald-700'
-                }`}
-              >
-                {i.status === 'gratis' ? 'Gratis (Rp 0)' : formatRupiah(i.nominal)}
-              </p>
-              {i.status === 'bayar_nanti' && (
-                <button
-                  type="button"
-                  onClick={() => handleLunasiIuran(i.id)}
-                  disabled={actionLoadingId === i.id}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-500 text-white hover:bg-amber-600 shadow-sm transition-colors disabled:opacity-50"
-                >
-                  {actionLoadingId === i.id ? '...' : '💰 Lunasi'}
-                </button>
-              )}
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      {iuranPagination && iuranPagination.total_pages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4">
           <Button
             variant="secondary"
             size="sm"
-            disabled={iuranPage <= 1}
-            onClick={() => setIuranPage((p) => p - 1)}
+            className="mt-4 w-full"
+            onClick={() => setEditOpen(true)}
           >
-            Sebelumnya
-          </Button>
-          <span className="text-sm text-neutral-500">
-            {iuranPage} / {iuranPagination.total_pages}
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={iuranPage >= iuranPagination.total_pages}
-            onClick={() => setIuranPage((p) => p + 1)}
-          >
-            Berikutnya
+            Edit Pemain
           </Button>
         </div>
-      )}
+
+        {/* Iuran section */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-heading font-semibold text-ink-900">Riwayat Iuran</h2>
+          <Button
+            size="sm"
+            onClick={async () => {
+              const currentDate = new Date();
+              setIuranTahun(currentDate.getFullYear());
+              setIuranBulan(currentDate.getMonth() + 1);
+              setIuranStatusMode('lunas');
+              setIuranError(null);
+              try {
+                const confRes = await fetch('/api/v1/konfigurasi');
+                const confJson = await confRes.json();
+                if (confRes.ok && confJson.data?.iuran_bulanan) {
+                  setIuranNominal(String(confJson.data.iuran_bulanan));
+                } else {
+                  setIuranNominal('50000');
+                }
+              } catch {
+                setIuranNominal('50000');
+              }
+              setIuranOpen(true);
+            }}
+          >
+            + Catat Iuran
+          </Button>
+        </div>
+
+        {iuranList.length === 0 && (
+          <EmptyState
+            message="Belum ada iuran"
+            hint="Tekan tombol + Catat Iuran untuk mencatat iuran pemain"
+          />
+        )}
+
+        <div className="flex flex-col gap-2.5">
+          {iuranList.map((i) => (
+            <ListRow
+              key={i.id}
+              title={`${BULAN[i.periode_bulan - 1]} ${i.periode_tahun}`}
+              subtitle={
+                i.status === 'lunas' && i.dibayar_pada
+                  ? `Dibayar: ${new Date(i.dibayar_pada).toLocaleDateString('id-ID')}`
+                  : `Dicatat: ${new Date(i.dibuat_pada).toLocaleDateString('id-ID')}`
+              }
+              right={
+                <div className="flex items-center gap-2 shrink-0">
+                  <p
+                    className={[
+                      'text-body font-bold nums',
+                      i.status === 'gratis'
+                        ? 'text-primary-700'
+                        : i.status === 'bayar_nanti'
+                        ? 'text-warning'
+                        : 'text-icon-mint',
+                    ].join(' ')}
+                  >
+                    {i.status === 'gratis' ? 'Gratis (Rp 0)' : formatRupiah(i.nominal)}
+                  </p>
+                  <Badge
+                    label={
+                      i.status === 'bayar_nanti'
+                        ? 'Bayar Nanti'
+                        : i.status === 'gratis'
+                        ? 'Gratis'
+                        : 'Lunas'
+                    }
+                    variant={
+                      i.status === 'bayar_nanti'
+                        ? 'warning'
+                        : i.status === 'gratis'
+                        ? 'info'
+                        : 'lunas'
+                    }
+                  />
+                  {i.status === 'bayar_nanti' && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmIuranTarget(i)}
+                      disabled={actionLoadingId === i.id}
+                      className="px-2.5 py-1 text-caption font-semibold rounded-lg bg-warning text-white hover:bg-warning/90 shadow-card transition-colors disabled:opacity-50"
+                    >
+                      {actionLoadingId === i.id ? '...' : 'Lunasi'}
+                    </button>
+                  )}
+                </div>
+              }
+            />
+          ))}
+        </div>
+
+        {/* Pagination */}
+        {iuranPagination && iuranPagination.total_pages > 1 && (
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={iuranPage <= 1}
+              onClick={() => setIuranPage((p) => p - 1)}
+            >
+              Sebelumnya
+            </Button>
+            <span className="text-body text-ink-400 nums">
+              {iuranPage} / {iuranPagination.total_pages}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={iuranPage >= iuranPagination.total_pages}
+              onClick={() => setIuranPage((p) => p + 1)}
+            >
+              Berikutnya
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Edit sheet */}
       <PemainForm
@@ -408,64 +417,64 @@ function PemainDetailPageInner() {
         <div className="flex flex-col gap-4">
           {/* Pilihan Mode */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+            <label className="text-caption font-semibold text-ink-700 uppercase tracking-wider">
               Pilihan Status Membership
             </label>
-            <div className="grid grid-cols-3 gap-1.5 bg-neutral-100 p-1 rounded-xl">
+            <div className="grid grid-cols-3 gap-1.5 bg-peach-100 p-1 rounded-xl">
               <button
                 type="button"
                 onClick={() => setIuranStatusMode('lunas')}
-                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center ${
+                className={`py-2 px-1 text-caption font-semibold rounded-lg transition-all text-center ${
                   iuranStatusMode === 'lunas'
-                    ? 'bg-white text-emerald-700 shadow-sm'
-                    : 'text-neutral-600 hover:text-neutral-900'
+                    ? 'bg-surface text-icon-mint shadow-card'
+                    : 'text-ink-600 hover:text-ink-900'
                 }`}
               >
-                💳 Lunas
+                Lunas
               </button>
               <button
                 type="button"
                 onClick={() => setIuranStatusMode('bayar_nanti')}
-                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center ${
+                className={`py-2 px-1 text-caption font-semibold rounded-lg transition-all text-center ${
                   iuranStatusMode === 'bayar_nanti'
-                    ? 'bg-white text-amber-700 shadow-sm'
-                    : 'text-neutral-600 hover:text-neutral-900'
+                    ? 'bg-surface text-warning shadow-card'
+                    : 'text-ink-600 hover:text-ink-900'
                 }`}
               >
-                ⏳ Bayar Nanti
+                Bayar Nanti
               </button>
               <button
                 type="button"
                 onClick={() => setIuranStatusMode('gratis')}
-                className={`py-2 px-1 text-xs font-semibold rounded-lg transition-all text-center ${
+                className={`py-2 px-1 text-caption font-semibold rounded-lg transition-all text-center ${
                   iuranStatusMode === 'gratis'
-                    ? 'bg-white text-purple-700 shadow-sm'
-                    : 'text-neutral-600 hover:text-neutral-900'
+                    ? 'bg-surface text-primary-700 shadow-card'
+                    : 'text-ink-600 hover:text-ink-900'
                 }`}
               >
-                🎁 Tanpa Bayar
+                Tanpa Bayar
               </button>
             </div>
           </div>
 
           <div className="flex gap-3">
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm font-medium text-neutral-700">Tahun</label>
+              <label className="text-body font-medium text-ink-700">Tahun</label>
               <input
                 type="number"
                 value={iuranTahun}
                 onChange={(e) => setIuranTahun(parseInt(e.target.value, 10))}
                 min={2020}
                 max={2100}
-                className="h-11 rounded-lg border border-neutral-300 px-3 text-base text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="h-11 rounded-lg border border-line bg-surface px-3 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
               />
             </div>
             <div className="flex flex-col gap-1 flex-1">
-              <label className="text-sm font-medium text-neutral-700">Bulan</label>
+              <label className="text-body font-medium text-ink-700">Bulan</label>
               <select
                 value={iuranBulan}
                 onChange={(e) => setIuranBulan(parseInt(e.target.value, 10))}
-                className="h-11 rounded-lg border border-neutral-300 px-3 text-base text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="h-11 rounded-lg border border-line bg-surface px-3 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
               >
                 {BULAN.map((nama, idx) => (
                   <option key={idx + 1} value={idx + 1}>
@@ -477,18 +486,17 @@ function PemainDetailPageInner() {
           </div>
 
           {iuranStatusMode !== 'gratis' && (
-            <Input
-              label={iuranStatusMode === 'bayar_nanti' ? 'Nominal Tagihan Iuran (Rp)' : 'Nominal Iuran (Rp)'}
-              type="number"
-              value={iuranNominal}
-              onChange={(e) => setIuranNominal(e.target.value)}
-              min={1}
-              placeholder="50000"
+            <CurrencyInput
+              label={iuranStatusMode === 'bayar_nanti' ? 'Nominal Tagihan Iuran' : 'Nominal Iuran'}
+              value={parseInt(iuranNominal, 10) || 0}
+              onChange={(val) => setIuranNominal(String(val))}
+              placeholder="0"
+              quickAdds={[25000, 50000, 75000, 100000]}
             />
           )}
 
           {iuranError && (
-            <p className="text-sm text-danger-600" role="alert">
+            <p className="text-body text-danger" role="alert">
               {iuranError}
             </p>
           )}
@@ -512,6 +520,26 @@ function PemainDetailPageInner() {
         </div>
       </BottomSheet>
 
+      {/* Confirm Pelunasan Dialog */}
+      <ConfirmDialog
+        open={!!confirmIuranTarget}
+        onClose={() => setConfirmIuranTarget(null)}
+        onConfirm={async () => {
+          if (!confirmIuranTarget) return;
+          setConfirmIuranLoading(true);
+          try {
+            await handleLunasiIuran(confirmIuranTarget.id);
+            setConfirmIuranTarget(null);
+          } finally {
+            setConfirmIuranLoading(false);
+          }
+        }}
+        title="Konfirmasi Pelunasan Iuran"
+        description={`Konfirmasi pelunasan iuran untuk ${pemain?.nama} (${formatRupiah(confirmIuranTarget?.nominal ?? 0)})? Uang akan dicatat masuk ke kas grup.`}
+        confirmLabel="Ya, Lunaskan"
+        loading={confirmIuranLoading}
+      />
+
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   );
@@ -519,7 +547,7 @@ function PemainDetailPageInner() {
 
 export default function PemainDetailPage() {
   return (
-    <Suspense fallback={<div className="p-4 text-center text-sm text-neutral-500">Memuat...</div>}>
+    <Suspense fallback={<div className="px-5 py-4 text-center text-body text-ink-400">Memuat...</div>}>
       <PemainDetailPageInner />
     </Suspense>
   );

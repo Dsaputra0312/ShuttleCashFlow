@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { Toggle } from '@/components/ui/Toggle';
+import { Switch } from '@/components/ui/Switch';
 
 const pemainSchema = z.object({
   nama: z.string().min(1, 'Nama wajib diisi'),
@@ -66,10 +66,6 @@ export function PemainForm({ open, onClose, initial, onSuccess }: PemainFormProp
   ) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
-  };
-
-  const handleToggle = () => {
-    setForm((prev) => ({ ...prev, bebas_biaya: !prev.bebas_biaya }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,23 +132,23 @@ export function PemainForm({ open, onClose, initial, onSuccess }: PemainFormProp
           type="tel"
         />
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-neutral-700">Catatan</label>
+          <label className="text-body font-medium text-ink-700">Catatan</label>
           <textarea
             value={form.catatan ?? ''}
             onChange={handleChange('catatan')}
             placeholder="Opsional"
             rows={3}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-base text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-body text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-primary-700"
           />
         </div>
 
-        {/* Bebas biaya toggle */}
+        {/* Bebas biaya switch */}
         <div
-          onClick={handleToggle}
-          className="flex items-center justify-between w-full h-11 px-3 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100/60 transition-colors cursor-pointer select-none"
+          onClick={() => setForm((prev) => ({ ...prev, bebas_biaya: !prev.bebas_biaya }))}
+          className="flex items-center justify-between w-full h-11 px-3 rounded-lg border border-line bg-peach-100 hover:bg-peach-200 transition-colors cursor-pointer select-none"
         >
-          <span className="text-sm text-neutral-700">Bebas Biaya</span>
-          <Toggle
+          <span className="text-body text-ink-700">Bebas Biaya</span>
+          <Switch
             checked={!!form.bebas_biaya}
             onChange={(checked) => setForm((prev) => ({ ...prev, bebas_biaya: checked }))}
             aria-label="Bebas Biaya"
@@ -160,7 +156,7 @@ export function PemainForm({ open, onClose, initial, onSuccess }: PemainFormProp
         </div>
 
         {serverError && (
-          <p className="text-sm text-danger-600" role="alert">
+          <p className="text-body text-danger" role="alert">
             {serverError}
           </p>
         )}

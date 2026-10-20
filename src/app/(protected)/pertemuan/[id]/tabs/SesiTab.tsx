@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { CirclePlus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { IconButton } from '@/components/ui/IconButton';
+import { ShuttlecockIcon } from '@/components/ui/ShuttlecockIcon';
 import { TambahSesiSheet } from '@/components/pertemuan/TambahSesiSheet';
 import { SelesaikanSesiSheet } from '@/components/pertemuan/SelesaikanSesiSheet';
 
@@ -113,18 +116,53 @@ export function SesiTab({ pertemuanId, terkunci, onRefresh }: SesiTabProps) {
 
   if (loading) {
     return (
-      <div className="p-4">
+      <div className="px-5 py-4">
         <SkeletonList count={3} />
       </div>
     );
   }
 
+  const totalBola = sesiList.reduce((acc, s) => acc + (s.bola_terpakai || 0), 0);
+  const activeDrafts = sesiList.filter((s) => s.bola_terpakai === 0);
+
   return (
-    <div className="p-4">
+    <div className="px-5 py-4 flex flex-col gap-4">
+      {/* Realtime Session & Shuttlecock Indicator */}
+      {sesiList.length > 0 && (
+        <div className="bg-surface rounded-2xl border border-line p-3.5 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700">
+              <ShuttlecockIcon size={20} />
+            </div>
+            <div>
+              <p className="text-body font-bold text-ink-900 leading-tight">
+                {totalBola} Shuttlecock
+              </p>
+              <p className="text-caption text-ink-500 mt-0.5">
+                Total terpakai dari {sesiList.length} sesi
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            {activeDrafts.length > 0 ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-caption font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                {activeDrafts.length} Main
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-caption font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 text-center text-[14px]">
+                Semua Selesai
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {sesiList.length === 0 && (
         <EmptyState
           message="Belum ada sesi"
-          hint={!terkunci ? "Tekan + untuk menambah sesi" : undefined}
+          hint={!terkunci ? 'Tekan + untuk menambah sesi' : undefined}
         />
       )}
 
@@ -135,24 +173,24 @@ export function SesiTab({ pertemuanId, terkunci, onRefresh }: SesiTabProps) {
             <div
               key={s.id}
               className={[
-                'rounded-2xl border p-4 transition-all shadow-xs',
+                'rounded-2xl p-4 transition-all',
                 isDraft
-                  ? 'bg-amber-50/30 border-amber-300 ring-1 ring-amber-200/70'
-                  : 'bg-white border-neutral-200/90 hover:border-neutral-300',
+                  ? 'bg-surface border-2 border-amber-400 shadow-card ring-2 ring-amber-400/15'
+                  : 'bg-surface border border-line shadow-xs',
               ].join(' ')}
             >
-              {/* Card Header: Sesi, Court, Status, and Delete */}
+              {/* Card Header */}
               <div className="flex items-center justify-between gap-2 pb-2">
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
-                  <p className="font-bold text-neutral-900 text-base">
+                  <p className="font-semibold text-ink-900 text-base">
                     Sesi {idx + 1}
                   </p>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 border border-neutral-200/70">
+                  <span className="text-caption font-medium px-2 py-0.5 rounded-md bg-peach-100 text-ink-700 border border-line">
                     Lap. {s.lapangan}
                   </span>
                   {isDraft && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-caption font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-xs">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                       Sedang Main
                     </span>
                   )}
@@ -162,38 +200,36 @@ export function SesiTab({ pertemuanId, terkunci, onRefresh }: SesiTabProps) {
                   <button
                     type="button"
                     onClick={() => setConfirmDeleteId(s.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-neutral-400 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition-colors shrink-0"
+                    className="inline-flex items-center gap-1 px-2 py-1 text-caption font-semibold text-danger/80 hover:text-danger hover:bg-danger-surface rounded-lg transition-colors shrink-0"
                     aria-label={`Hapus sesi ${idx + 1}`}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span>Hapus</span>
+                    Hapus
                   </button>
                 )}
               </div>
 
-              {/* Player Chips */}
+              {/* Player Tags — High contrast and clearly readable */}
               <div className="flex flex-wrap gap-1.5 py-2">
                 {s.pemain_ids.map((pid) => (
                   <span
                     key={pid}
-                    className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-neutral-100 text-neutral-800 border border-neutral-200/60"
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-caption font-semibold bg-peach-100 text-ink-900 border border-line"
                   >
                     {pemainMap.get(pid) ?? pid.slice(0, 8)}
                   </span>
                 ))}
               </div>
 
-              {/* Card Footer: Status & Actions */}
+              {/* Card Footer */}
               {isDraft ? (
-                <div className="space-y-2.5 pt-2.5 border-t border-amber-200/60">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-amber-800 font-medium flex items-center gap-1.5">
-                      🏸 Menunggu input bola
+                <div className="space-y-2.5 pt-2.5 border-t border-line/80">
+                  <div className="flex items-center justify-between text-caption">
+                    <span className="text-amber-800 font-semibold flex items-center gap-1.5">
+                      <ShuttlecockIcon size={14} />
+                      Menunggu input bola
                     </span>
                     {s.ditanggung_oleh_pemain_id && (
-                      <span className="text-primary-700 bg-primary-50 px-2 py-0.5 rounded text-[11px] font-medium border border-primary-200">
+                      <span className="text-primary-700 bg-primary-100 px-2 py-0.5 rounded text-caption font-semibold">
                         Ditanggung {pemainMap.get(s.ditanggung_oleh_pemain_id) ?? ''}
                       </span>
                     )}
@@ -203,19 +239,20 @@ export function SesiTab({ pertemuanId, terkunci, onRefresh }: SesiTabProps) {
                       size="sm"
                       variant="primary"
                       onClick={() => setSelesaikanSesi(s)}
-                      className="w-full justify-center h-10 font-semibold shadow-xs"
+                      className="w-full justify-center !h-10 text-body font-bold shadow-xs"
                     >
-                      Input Bola & Selesai
+                      Input Bola &amp; Selesai
                     </Button>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center justify-between text-xs pt-2.5 border-t border-neutral-100 text-neutral-600">
+                <div className="flex items-center justify-between text-caption pt-2.5 border-t border-line text-ink-600">
                   <span className="font-medium flex items-center gap-1.5">
-                    🏸 {s.bola_terpakai} bola terpakai
+                    <ShuttlecockIcon size={14} />
+                    {s.bola_terpakai} bola terpakai
                   </span>
                   {s.ditanggung_oleh_pemain_id && (
-                    <span className="text-primary-700 bg-primary-50 px-2 py-0.5 rounded text-[11px] font-medium border border-primary-200">
+                    <span className="text-primary-700 bg-primary-100 px-2 py-0.5 rounded text-caption font-medium">
                       Ditanggung {pemainMap.get(s.ditanggung_oleh_pemain_id) ?? ''}
                     </span>
                   )}
@@ -228,14 +265,14 @@ export function SesiTab({ pertemuanId, terkunci, onRefresh }: SesiTabProps) {
 
       {/* FAB — only if not locked */}
       {!terkunci && (
-        <button
-          type="button"
+        <IconButton
+          icon={CirclePlus}
+          label="Tambah sesi"
+          variant="filled"
+          size="lg"
           onClick={() => setSheetOpen(true)}
-          aria-label="Tambah sesi"
-          className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg active:bg-primary-700"
-        >
-          <span className="text-2xl leading-none" aria-hidden="true">+</span>
-        </button>
+          className="fixed bottom-[120px] right-4 z-30 shadow-float"
+        />
       )}
 
       {/* Selesaikan Sesi Sheet (Input Bola) */}
@@ -251,35 +288,17 @@ export function SesiTab({ pertemuanId, terkunci, onRefresh }: SesiTabProps) {
         }}
       />
 
-      {/* Delete Confirmation Sheet */}
-      <BottomSheet
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
         open={!!confirmDeleteId}
         onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
         title="Hapus Sesi"
-      >
-        <div className="p-4 space-y-4">
-          <p className="text-sm text-neutral-600">
-            Apakah Anda yakin ingin menghapus sesi ini? Tindakan ini tidak dapat dibatalkan.
-          </p>
-          <div className="flex gap-2 pb-4">
-            <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={() => setConfirmDeleteId(null)}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="danger"
-              className="flex-1"
-              loading={!!deleteLoading}
-              onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
-            >
-              Hapus Sesi
-            </Button>
-          </div>
-        </div>
-      </BottomSheet>
+        description="Apakah Anda yakin ingin menghapus sesi ini? Tindakan ini tidak dapat dibatalkan."
+        confirmLabel="Hapus Sesi"
+        destructive
+        loading={!!deleteLoading}
+      />
 
       <TambahSesiSheet
         open={sheetOpen}

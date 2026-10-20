@@ -3,63 +3,22 @@
 import React, { Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { House, CalendarDays, Wallet, Users, LayoutGrid } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { AppIcon } from '@/components/ui/AppIcon';
 
 interface NavTab {
   href: string;
   label: string;
-  icon: React.ReactNode;
-}
-
-function HomeIcon() {
-  return (
-    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 21V12h6v9" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <rect x="3" y="4" width="18" height="18" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-}
-
-function WalletIcon() {
-  return (
-    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 7H3a1 1 0 00-1 1v11a1 1 0 001 1h18a1 1 0 001-1V8a1 1 0 00-1-1z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 13a1 1 0 100 2 1 1 0 000-2z" fill="currentColor" stroke="none" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 7V5a1 1 0 011-1h16a1 1 0 011 1v2" />
-    </svg>
-  );
-}
-
-function UsersIcon() {
-  return (
-    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05C16.19 13.89 17 14.6 17 15.5V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-    </svg>
-  );
-}
-
-function MenuIcon() {
-  return (
-    <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  );
+  icon: LucideIcon;
 }
 
 const tabs: NavTab[] = [
-  { href: '/', label: 'Beranda', icon: <HomeIcon /> },
-  { href: '/pertemuan', label: 'Pertemuan', icon: <CalendarIcon /> },
-  { href: '/kas', label: 'Kas', icon: <WalletIcon /> },
-  { href: '/pemain', label: 'Pemain', icon: <UsersIcon /> },
-  { href: '/lainnya', label: 'Lainnya', icon: <MenuIcon /> },
+  { href: '/', label: 'Beranda', icon: House },
+  { href: '/pertemuan', label: 'Pertemuan', icon: CalendarDays },
+  { href: '/kas', label: 'Kas', icon: Wallet },
+  { href: '/pemain', label: 'Pemain', icon: Users },
+  { href: '/lainnya', label: 'Lainnya', icon: LayoutGrid },
 ];
 
 function BottomNavInner() {
@@ -68,20 +27,57 @@ function BottomNavInner() {
   return (
     <>
       {tabs.map((tab) => {
-        const isActive = tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
+        const isActive =
+          tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
         return (
           <Link
             key={tab.href}
             href={tab.href}
             className={[
-              'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500',
-              isActive ? 'text-primary-600' : 'text-neutral-400',
+              'group relative flex flex-1 flex-col items-center justify-center py-1 transition-all duration-200 select-none',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-2xl',
+              'active:scale-95',
             ].join(' ')}
             aria-current={isActive ? 'page' : undefined}
           >
-            {tab.icon}
-            <span>{tab.label}</span>
+            {/* Icon container with soft active pill */}
+            <div
+              className={[
+                'relative flex items-center justify-center w-11 h-8 rounded-full transition-all duration-200',
+                isActive
+                  ? 'bg-primary-100 text-primary-700 shadow-xs'
+                  : 'text-ink-400 group-hover:text-ink-900 group-hover:bg-peach-100/60',
+              ].join(' ')}
+            >
+              <AppIcon
+                icon={tab.icon}
+                size="md"
+                strokeWidth={isActive ? 2.25 : 1.75}
+              />
+            </div>
+
+            {/* Label */}
+            <span
+              className={[
+                'text-[11px] leading-tight mt-1 transition-all duration-200',
+                isActive
+                  ? 'text-primary-700 font-bold tracking-tight'
+                  : 'text-ink-400 font-medium group-hover:text-ink-700',
+              ].join(' ')}
+            >
+              {tab.label}
+            </span>
+
+            {/* Sleek active capsule pill indicator below label (matches reference image) */}
+            <span
+              className={[
+                'h-1 rounded-full bg-primary-700 mt-0.5 transition-all duration-200',
+                isActive
+                  ? 'w-4 opacity-100'
+                  : 'w-0 opacity-0',
+              ].join(' ')}
+              aria-hidden="true"
+            />
           </Link>
         );
       })}
@@ -89,7 +85,6 @@ function BottomNavInner() {
   );
 }
 
-// Fallback renders all tabs without active highlight
 function BottomNavFallback() {
   return (
     <>
@@ -97,10 +92,13 @@ function BottomNavFallback() {
         <Link
           key={tab.href}
           href={tab.href}
-          className="flex min-h-[56px] flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500"
+          className="flex flex-1 flex-col items-center justify-center py-1 text-ink-400 font-medium"
         >
-          {tab.icon}
-          <span>{tab.label}</span>
+          <div className="flex items-center justify-center w-11 h-8">
+            <AppIcon icon={tab.icon} size="md" />
+          </div>
+          <span className="text-[11px] leading-tight mt-1">{tab.label}</span>
+          <span className="h-1 w-0 mt-0.5" />
         </Link>
       ))}
     </>
@@ -111,8 +109,8 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navigasi utama"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      className="fixed bottom-0 left-1/2 z-30 flex w-full max-w-[430px] -translate-x-1/2 items-center justify-around border-t border-neutral-200 bg-white pb-safe"
+      className="fixed bottom-4 left-1/2 z-30 flex w-[calc(100%-32px)] max-w-[400px] -translate-x-1/2 items-center justify-around rounded-[26px] bg-white/95 backdrop-blur-xl px-2 py-1.5 shadow-[0_12px_36px_rgba(40,64,143,0.16),0_2px_8px_rgba(40,64,143,0.06)] border border-white/80 ring-1 ring-line/70"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 6px)' }}
     >
       <Suspense fallback={<BottomNavFallback />}>
         <BottomNavInner />

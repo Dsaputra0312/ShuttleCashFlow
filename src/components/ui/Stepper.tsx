@@ -27,7 +27,7 @@ export function Stepper({
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <span className="text-sm font-medium text-neutral-700">{label}</span>
+        <span className="text-caption font-medium text-ink-900">{label}</span>
       )}
       <div className="flex items-center gap-0">
         <button
@@ -35,12 +35,12 @@ export function Stepper({
           onClick={decrement}
           disabled={disabled || value <= min}
           aria-label="Kurang"
-          className="flex h-11 w-11 items-center justify-center rounded-l-lg border border-r-0 border-neutral-300 bg-neutral-100 text-xl font-bold text-neutral-700 hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-12 h-12 items-center justify-center rounded-l-md border border-r-0 border-line bg-surface text-xl font-bold text-ink-700 hover:bg-peach-100 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
         >
           −
         </button>
         <div
-          className="flex h-11 min-w-[64px] items-center justify-center border border-neutral-300 bg-white px-3 text-base font-medium text-neutral-900"
+          className="flex h-12 min-w-[56px] items-center justify-center border border-line bg-surface px-3 text-body font-medium text-ink-900 nums"
           aria-label={label ? `${label}: ${value}` : String(value)}
         >
           {value}
@@ -50,7 +50,7 @@ export function Stepper({
           onClick={increment}
           disabled={disabled || value >= max}
           aria-label="Tambah"
-          className="flex h-11 w-11 items-center justify-center rounded-r-lg border border-l-0 border-neutral-300 bg-neutral-100 text-xl font-bold text-neutral-700 hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-12 h-12 items-center justify-center rounded-r-md border border-l-0 border-line bg-surface text-xl font-bold text-ink-700 hover:bg-peach-100 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
         >
           +
         </button>

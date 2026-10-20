@@ -10,11 +10,13 @@ import { useToast } from '@/components/ui/useToast';
 import { Stepper } from '@/components/ui/Stepper';
 import { Chip } from '@/components/ui/Chip';
 import { Badge } from '@/components/ui/Badge';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 
 export default function GalleryPage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [stepperValue, setStepperValue] = useState(3);
   const [selectedChips, setSelectedChips] = useState<string[]>([]);
+  const [currencyValue, setCurrencyValue] = useState(50000);
   const { toasts, addToast, dismiss } = useToast();
 
   function toggleChip(id: string) {
@@ -24,17 +26,17 @@ export default function GalleryPage() {
   }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-[360px] space-y-8 p-4 bg-neutral-50">
-      <h1 className="text-xl font-bold text-neutral-900">Galeri Komponen UI</h1>
+    <div className="mx-auto min-h-screen w-full max-w-[360px] space-y-8 p-4 bg-peach-50">
+      <h1 className="text-xl font-bold text-ink-900">Galeri Komponen UI</h1>
 
       {/* Buttons */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Button</h2>
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Button</h2>
         <div className="flex flex-wrap gap-2">
           <Button variant="primary">Primary</Button>
-          <Button variant="secondary">Secondary</Button>
+          <Button variant="tonal">Tonal</Button>
           <Button variant="ghost">Ghost</Button>
-          <Button variant="danger">Danger</Button>
+          <Button variant="destructive">Destructive</Button>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="primary" size="sm">Small</Button>
@@ -49,24 +51,36 @@ export default function GalleryPage() {
 
       {/* Inputs */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Input</h2>
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Input</h2>
         <Input label="Email" type="email" placeholder="admin@example.com" />
         <Input label="With error" error="Field ini wajib diisi" placeholder="Masukkan nilai..." />
         <Input label="With hint" hint="Format: DD/MM/YYYY" placeholder="01/01/2024" />
       </section>
 
+      {/* Currency Input with Separators */}
+      <section className="space-y-3">
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Currency Input (Rupiah)</h2>
+        <CurrencyInput
+          label="Nominal Tagihan / Kas"
+          value={currencyValue}
+          onChange={setCurrencyValue}
+          quickAdds={[5000, 10000, 50000, 100000]}
+          hint="Input dengan pemisah ribuan otomatis & chip cepat"
+        />
+      </section>
+
       {/* Card */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Card</h2>
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Card</h2>
         <Card>
           <CardHeader title="Pertemuan #12" subtitle="Selasa, 15 Juli 2025" />
-          <p className="mt-2 text-sm text-neutral-600">10 pemain hadir · 2 tabung bola</p>
+          <p className="mt-2 text-caption text-ink-600">10 pemain hadir · 2 tabung bola</p>
         </Card>
       </section>
 
       {/* Stepper */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Stepper</h2>
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Stepper</h2>
         <Stepper
           label="Jumlah pemain"
           value={stepperValue}
@@ -78,7 +92,7 @@ export default function GalleryPage() {
 
       {/* Chips */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Chip</h2>
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Chip</h2>
         <div className="flex flex-wrap gap-2">
           {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].map((day) => (
             <Chip
@@ -93,7 +107,7 @@ export default function GalleryPage() {
 
       {/* Badges */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Badge</h2>
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Badge</h2>
         <div className="flex flex-wrap gap-2">
           <Badge label="Default" variant="default" />
           <Badge label="Aktif" variant="success" />
@@ -105,15 +119,15 @@ export default function GalleryPage() {
 
       {/* Toast */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Toast</h2>
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">Toast</h2>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" onClick={() => addToast('Berhasil disimpan!', 'success')}>
+          <Button variant="tonal" size="sm" onClick={() => addToast('Berhasil disimpan!', 'success')}>
             Success Toast
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => addToast('Terjadi kesalahan.', 'error')}>
+          <Button variant="tonal" size="sm" onClick={() => addToast('Terjadi kesalahan.', 'error')}>
             Error Toast
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => addToast('Perhatian!', 'warning')}>
+          <Button variant="tonal" size="sm" onClick={() => addToast('Perhatian!', 'warning')}>
             Warning Toast
           </Button>
         </div>
@@ -121,8 +135,8 @@ export default function GalleryPage() {
 
       {/* BottomSheet */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">BottomSheet</h2>
-        <Button variant="secondary" onClick={() => setSheetOpen(true)}>
+        <h2 className="text-caption font-semibold uppercase tracking-wide text-ink-400">BottomSheet</h2>
+        <Button variant="tonal" onClick={() => setSheetOpen(true)}>
           Buka BottomSheet
         </Button>
         <BottomSheet
@@ -131,7 +145,7 @@ export default function GalleryPage() {
           title="Pilih Opsi"
         >
           <div className="space-y-3">
-            <p className="text-sm text-neutral-600">Konten bottom sheet di sini.</p>
+            <p className="text-caption text-ink-600">Konten bottom sheet di sini.</p>
             <Button variant="primary" className="w-full" onClick={() => setSheetOpen(false)}>
               Konfirmasi
             </Button>

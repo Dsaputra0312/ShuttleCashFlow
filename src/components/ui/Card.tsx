@@ -4,14 +4,17 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   padding?: boolean;
+  onClick?: () => void;
 }
 
-export function Card({ children, className = '', padding = true }: CardProps) {
+export function Card({ children, className = '', padding = true, onClick }: CardProps) {
   return (
     <div
+      onClick={onClick}
       className={[
-        'bg-white rounded-xl border border-neutral-200 shadow-sm',
+        'bg-surface rounded-xl shadow-card border border-line',
         padding ? 'p-4' : '',
+        onClick ? 'cursor-pointer active:opacity-90' : '',
         className,
       ]
         .filter(Boolean)
@@ -33,9 +36,9 @@ export function CardHeader({ title, subtitle, action, className = '' }: CardHead
   return (
     <div className={['flex items-start justify-between gap-2', className].join(' ')}>
       <div>
-        <h3 className="text-base font-semibold text-neutral-900">{title}</h3>
+        <h3 className="text-heading font-heading text-ink-900">{title}</h3>
         {subtitle && (
-          <p className="text-sm text-neutral-500 mt-0.5">{subtitle}</p>
+          <p className="text-caption text-ink-600 mt-0.5">{subtitle}</p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

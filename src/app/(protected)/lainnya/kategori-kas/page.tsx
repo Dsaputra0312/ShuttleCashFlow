@@ -1,13 +1,18 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { ListRow } from '@/components/ui/ListRow';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
 
@@ -29,6 +34,7 @@ const kategoriSchema = z.object({
 type KategoriForm = z.infer<typeof kategoriSchema>;
 
 export default function KategoriKasPage() {
+  const router = useRouter();
   const { toasts, addToast, dismiss } = useToast();
   const [list, setList] = useState<KategoriKas[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +44,9 @@ export default function KategoriKasPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof KategoriForm, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+
+  const [deletingKategori, setDeletingKategori] = useState<KategoriKas | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -52,9 +61,6 @@ export default function KategoriKasPage() {
       setLoading(false);
     }
   }, [addToast]);
-
-  const [deletingKategori, setDeletingKategori] = useState<KategoriKas | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -149,123 +155,116 @@ export default function KategoriKasPage() {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-neutral-900">Kategori Kas</h1>
-        <Button size="sm" onClick={openAdd}>+ Tambah</Button>
-      </div>
+    <div>
+      <PageHeader
+        title="Kategori Kas"
+        onBack={() => router.push('/lainnya')}
+        action={
+          <Button size="sm" onClick={openAdd}>
+            Tambah
+          </Button>
+        }
+      />
 
-      {loading && <SkeletonList count={4} />}
+      <div className="p-4 max-w-xl mx-auto">
+        {loading && <SkeletonList count={4} />}
 
-      {!loading && list.length === 0 && (
-        <EmptyState
-          message="Belum ada kategori kas"
-          hint="Tekan tombol + Tambah untuk membuat kategori kas baru"
-        />
-      )}
-
-      <div className="flex flex-col gap-3">
-        {list.map((k) => (
-          <div
-            key={k.id}
-            className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-neutral-900 truncate">{k.nama}</p>
-                  {k.adalah_sistem && (
-                    <span aria-label="Kategori sistem" title="Kategori sistem" className="text-neutral-400">🔒</span>
-                  )}
-                </div>
-              </div>
-              <Badge
-                label={k.tipe === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran'}
-                variant={k.tipe === 'pemasukan' ? 'success' : 'danger'}
-              />
-            </div>
-
-            {!k.adalah_sistem && (
-              <div className="flex gap-2 mt-3">
-                <Button variant="secondary" size="sm" onClick={() => openEdit(k)} className="flex-1">
-                  Edit
-                </Button>
-                <Button variant="danger" size="sm" onClick={() => setDeletingKategori(k)} className="flex-1">
-                  Hapus
-                </Button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <BottomSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
-        title={editing ? 'Edit Kategori' : 'Tambah Kategori'}
-      >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            label="Nama Kategori"
-            value={form.nama}
-            onChange={handleChange('nama')}
-            error={errors.nama}
-            placeholder="Contoh: Sponsor"
+        {!loading && list.length === 0 && (
+          <EmptyState
+            message="Belum ada kategori kas"
+            hint="Tekan tombol Tambah untuk membuat kategori kas baru"
           />
+        )}
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-neutral-700">Tipe</label>
-            <select
+        {!loading && list.length > 0 && (
+          <div className="flex flex-col gap-2.5">
+            {list.map((k) => (
+              <ListRow
+                key={k.id}
+                title={k.nama}
+                subtitle={k.adalah_sistem ? 'Kategori bawaan sistem' : undefined}
+                right={
+                  <div className="flex items-center gap-2">
+                    {k.adalah_sistem && (
+                      <Badge label="Sistem" variant="default" />
+                    )}
+                    <Badge
+                      label={k.tipe === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran'}
+                      variant={k.tipe === 'pemasukan' ? 'success' : 'danger'}
+                    />
+                    {!k.adalah_sistem && (
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(k)}>
+                          Edit
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => setDeletingKategori(k)}>
+                          Hapus
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                }
+              />
+            ))}
+          </div>
+        )}
+
+        <BottomSheet
+          open={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          title={editing ? 'Edit Kategori' : 'Tambah Kategori'}
+        >
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Input
+              label="Nama Kategori"
+              value={form.nama}
+              onChange={handleChange('nama')}
+              error={errors.nama}
+              placeholder="Contoh: Sponsor"
+            />
+
+            <Select
+              label="Tipe"
               value={form.tipe}
               onChange={handleChange('tipe')}
-              className="h-11 w-full rounded-lg border border-neutral-300 px-3 text-base text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              error={errors.tipe}
             >
               <option value="pemasukan">Pemasukan</option>
               <option value="pengeluaran">Pengeluaran</option>
-            </select>
-            {errors.tipe && <p className="text-sm text-danger-600">{errors.tipe}</p>}
-          </div>
+            </Select>
 
-          {serverError && <p className="text-sm text-danger-600" role="alert">{serverError}</p>}
+            {serverError && (
+              <p className="text-caption text-danger" role="alert">
+                {serverError}
+              </p>
+            )}
 
-          <div className="flex gap-3">
-            <Button type="button" variant="secondary" onClick={() => setSheetOpen(false)} className="flex-1">Batal</Button>
-            <Button type="submit" loading={submitting} className="flex-1">{editing ? 'Simpan' : 'Tambah'}</Button>
-          </div>
-        </form>
-      </BottomSheet>
+            <div className="flex gap-3 mt-1">
+              <Button type="button" variant="ghost" onClick={() => setSheetOpen(false)} className="flex-1">
+                Batal
+              </Button>
+              <Button type="submit" loading={submitting} className="flex-1">
+                {editing ? 'Simpan' : 'Tambah'}
+              </Button>
+            </div>
+          </form>
+        </BottomSheet>
 
-      {/* Confirmation BottomSheet for deleting category */}
-      <BottomSheet
-        open={!!deletingKategori}
-        onClose={() => setDeletingKategori(null)}
-        title="Hapus Kategori"
-      >
-        <div className="p-4 space-y-4">
-          <p className="text-sm text-neutral-600">
-            Apakah Anda yakin ingin menghapus kategori &quot;{deletingKategori?.nama}&quot;?
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={() => setDeletingKategori(null)}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="danger"
-              className="flex-1"
-              loading={deleteLoading}
-              onClick={handleDelete}
-            >
-              Hapus
-            </Button>
-          </div>
-        </div>
-      </BottomSheet>
+        {/* Confirmation dialog for deleting category */}
+        <ConfirmDialog
+          open={!!deletingKategori}
+          onClose={() => setDeletingKategori(null)}
+          onConfirm={handleDelete}
+          title="Hapus Kategori"
+          description={`Apakah Anda yakin ingin menghapus kategori "${deletingKategori?.nama}"?`}
+          confirmLabel="Hapus"
+          cancelLabel="Batal"
+          destructive
+          loading={deleteLoading}
+        />
 
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      </div>
     </div>
   );
 }

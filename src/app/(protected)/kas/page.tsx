@@ -2,6 +2,7 @@
 
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Plus, Minus } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BottomSheet } from '@/components/ui/BottomSheet';
@@ -10,6 +11,13 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Input } from '@/components/ui/Input';
 import { ToastContainer } from '@/components/ui/Toast';
 import { useToast } from '@/components/ui/useToast';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { HeroCard } from '@/components/ui/HeroCard';
+import { Tabs } from '@/components/ui/Tabs';
+import { ListRow } from '@/components/ui/ListRow';
+import { IconTile } from '@/components/ui/IconTile';
+import { IconButton } from '@/components/ui/IconButton';
+import { CurrencyInput } from '@/components/ui/CurrencyInput';
 import { formatRupiah } from '@/lib/money';
 
 interface Transaksi {
@@ -65,7 +73,7 @@ function KasPageInner() {
   // Add sheet (Normal Pemasukan / Pengeluaran)
   const [addOpen, setAddOpen] = useState(false);
   const [addTipe, setAddTipe] = useState<'pemasukan' | 'pengeluaran'>('pemasukan');
-  const [addNominal, setAddNominal] = useState('');
+  const [addNominal, setAddNominal] = useState<number>(0);
   const [addKategori, setAddKategori] = useState('');
   const [addKeterangan, setAddKeterangan] = useState('');
   const [addLoading, setAddLoading] = useState(false);
@@ -76,11 +84,11 @@ function KasPageInner() {
   const [penyesuaianMode, setPenyesuaianMode] = useState<'set_saldo' | 'tambah_kurang'>('set_saldo');
 
   // Mode 1: Atur Saldo Fisik (Stok/Saldo Opname)
-  const [targetSaldoInput, setTargetSaldoInput] = useState('');
+  const [targetSaldoInput, setTargetSaldoInput] = useState<number>(0);
 
   // Mode 2: Tambah / Kurang Kas
   const [operasiTipe, setOperasiTipe] = useState<'+' | '-'>('-');
-  const [adjNominalInput, setAdjNominalInput] = useState('');
+  const [adjNominalInput, setAdjNominalInput] = useState<number>(0);
 
   const [penyesuaianAlasan, setPenyesuaianAlasan] = useState('');
   const [penyesuaianLoading, setPenyesuaianLoading] = useState(false);
@@ -167,9 +175,9 @@ function KasPageInner() {
   const openPenyesuaianModal = useCallback(() => {
     const current = saldoInfo?.saldo_saat_ini ?? 0;
     setPenyesuaianMode('set_saldo');
-    setTargetSaldoInput(current > 0 ? String(current) : '0');
+    setTargetSaldoInput(current > 0 ? current : 0);
     setOperasiTipe('-');
-    setAdjNominalInput('');
+    setAdjNominalInput(0);
     setPenyesuaianAlasan('');
     setPenyesuaianError(null);
     setPenyesuaianOpen(true);
@@ -192,7 +200,7 @@ function KasPageInner() {
 
   const openAdd = (tipe: 'pemasukan' | 'pengeluaran') => {
     setAddTipe(tipe);
-    setAddNominal('');
+    setAddNominal(0);
     setAddKategori('');
     setAddKeterangan('');
     setAddError(null);
@@ -200,7 +208,7 @@ function KasPageInner() {
   };
 
   const handleAdd = async () => {
-    const nominal = parseInt(addNominal, 10);
+    const nominal = addNominal;
     if (isNaN(nominal) || nominal <= 0) {
       setAddError('Nominal harus lebih dari 0');
       return;
@@ -243,7 +251,7 @@ function KasPageInner() {
     let payload: Record<string, unknown>;
 
     if (penyesuaianMode === 'set_saldo') {
-      const target = parseInt(targetSaldoInput, 10);
+      const target = targetSaldoInput;
       if (isNaN(target) || target < 0) {
         setPenyesuaianError('Target saldo kas harus angka valid >= 0');
         return;
@@ -258,7 +266,7 @@ function KasPageInner() {
         alasan: penyesuaianAlasan.trim() || `Pencatatan sisa fisik kas (${formatRupiah(target)})`,
       };
     } else {
-      const nom = parseInt(adjNominalInput, 10);
+      const nom = adjNominalInput;
       if (isNaN(nom) || nom <= 0) {
         setPenyesuaianError('Nominal penyesuaian harus lebih dari 0');
         return;
@@ -304,232 +312,193 @@ function KasPageInner() {
 
   // Live preview for set_saldo mode
   const currentSaldoNum = saldoInfo?.saldo_saat_ini ?? 0;
-  const targetSaldoNum = parseInt(targetSaldoInput, 10) || 0;
+  const targetSaldoNum = targetSaldoInput || 0;
   const previewDiff = targetSaldoNum - currentSaldoNum;
 
   // Live preview for tambah_kurang mode
-  const adjNominalNum = parseInt(adjNominalInput, 10) || 0;
+  const adjNominalNum = adjNominalInput || 0;
   const previewAdjNet = operasiTipe === '+' ? adjNominalNum : -adjNominalNum;
   const previewNewSaldo = currentSaldoNum + previewAdjNet;
 
+  const filterTabs = [
+    { key: '', label: 'Semua' },
+    { key: 'pemasukan', label: 'Masuk' },
+    { key: 'pengeluaran', label: 'Keluar' },
+  ];
+
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <h1 className="text-xl font-bold text-neutral-900 mb-4">Kas</h1>
+    <div>
+      <PageHeader title="Kas" />
 
-      {/* Saldo Kas Utama Card */}
-      <div className="bg-white rounded-2xl border border-neutral-200/90 shadow-sm p-5 mb-4">
+      <div className="px-5 py-4 flex flex-col gap-4">
+        {/* Hero Card — Saldo Kas */}
         {saldoLoading && !saldoInfo ? (
-          <p className="text-neutral-500 text-sm text-center py-4">Memuat data saldo kas...</p>
+          <div className="rounded-2xl bg-primary-700 h-24 animate-pulse" />
         ) : (
-          <>
-            <div className="text-center mb-4">
-              <p className="text-xs uppercase tracking-wider text-neutral-400 font-semibold mb-1">
-                Saldo Kas Saat Ini
-              </p>
-              <p
-                className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${
-                  (saldoInfo?.saldo_saat_ini ?? 0) >= 0 ? 'text-emerald-700' : 'text-danger-700'
-                }`}
-              >
-                {formatRupiah(saldoInfo?.saldo_saat_ini ?? 0)}
-              </p>
-              <p className="text-xs text-neutral-500 mt-1.5 font-medium">
-                Kas siap pakai untuk operasional grup badminton
-              </p>
-            </div>
-
+          <div>
+            <HeroCard
+              title="Saldo Kas Saat Ini"
+              value={formatRupiah(saldoInfo?.saldo_saat_ini ?? 0)}
+              subtitle="Kas siap pakai untuk operasional grup"
+            />
             {saldoInfo && (
-              <div className="grid grid-cols-2 gap-2 text-center text-xs text-neutral-600 border-t border-neutral-100 pt-3.5 mb-3.5">
-                <div className="bg-emerald-50/60 rounded-xl py-2 px-1 border border-emerald-100/70">
-                  <p className="font-bold text-emerald-800 text-sm">
+              <div className="mt-3 flex gap-2">
+                <div className="flex-1 bg-tint-mint rounded-xl p-3 border border-line text-center">
+                  <p className="text-caption font-semibold text-icon-mint nums">
                     {formatRupiah(saldoInfo.total_pemasukan)}
                   </p>
-                  <p className="text-[11px] text-emerald-600 font-medium mt-0.5">Total Masuk</p>
+                  <p className="text-caption text-ink-600 mt-0.5">Total Masuk</p>
                 </div>
-                <div className="bg-rose-50/60 rounded-xl py-2 px-1 border border-rose-100/70">
-                  <p className="font-bold text-rose-800 text-sm">
+                <div className="flex-1 bg-tint-peach rounded-xl p-3 border border-line text-center">
+                  <p className="text-caption font-semibold text-danger nums">
                     {formatRupiah(saldoInfo.total_pengeluaran)}
                   </p>
-                  <p className="text-[11px] text-rose-600 font-medium mt-0.5">Total Keluar</p>
+                  <p className="text-caption text-ink-600 mt-0.5">Total Keluar</p>
                 </div>
               </div>
             )}
-
-            {/* Action: Penyesuaian Kas button */}
             <Button
               variant="secondary"
-              className="w-full font-semibold flex items-center justify-center gap-2"
+              className="w-full mt-3"
               onClick={openPenyesuaianModal}
             >
-              <span>⚙️</span> Atur / Penyesuaian Kas
+              Atur / Penyesuaian Kas
             </Button>
-          </>
+          </div>
+        )}
+
+        {/* Filter bar */}
+        <div className="flex flex-col gap-2">
+          <Tabs
+            tabs={filterTabs}
+            active={filterTipe}
+            onChange={(k) => {
+              setFilterTipe(k as typeof filterTipe);
+              setPage(1);
+            }}
+            variant="pill"
+          />
+          <div className="flex gap-2">
+            <input
+              type="month"
+              value={filterBulan}
+              onChange={(e) => {
+                setFilterBulan(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Filter bulan"
+              className="flex-1 h-9 rounded-lg border border-line bg-surface px-2 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
+            />
+            <select
+              value={filterKategori}
+              onChange={(e) => {
+                setFilterKategori(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Filter kategori"
+              className="flex-1 h-9 rounded-lg border border-line bg-surface px-2 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
+            >
+              <option value="">Semua Kategori</option>
+              {kategoriList.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.nama}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* List */}
+        {loading ? (
+          <SkeletonList count={4} />
+        ) : list.length === 0 ? (
+          <EmptyState
+            message="Belum ada transaksi"
+            hint="Transaksi kas akan muncul di sini"
+          />
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {list.map((t) => (
+              <ListRow
+                key={t.id}
+                left={
+                  <IconTile
+                    tint={t.tipe === 'pemasukan' ? 'mint' : 'peach'}
+                    icon={t.tipe === 'pemasukan' ? Plus : Minus}
+                    size={40}
+                  />
+                }
+                title={formatRupiah(t.nominal)}
+                subtitle={
+                  [t.keterangan, t.kategori_nama]
+                    .filter(Boolean)
+                    .join(' · ') || '—'
+                }
+                right={
+                  <div className="flex flex-col items-end gap-1">
+                    <p className="text-caption text-ink-400 nums">
+                      {new Date(t.dibuat_pada).toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                      })}
+                    </p>
+                    <Badge
+                      label={t.tipe === 'pemasukan' ? 'Masuk' : 'Keluar'}
+                      variant={t.tipe === 'pemasukan' ? 'success' : 'danger'}
+                    />
+                    {t.referensi_tipe === 'penyesuaian_kas' && (
+                      <Badge label="Penyesuaian" variant="info" />
+                    )}
+                  </div>
+                }
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {pagination && pagination.total_pages > 1 && (
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Sebelumnya
+            </Button>
+            <span className="text-body text-ink-400 nums">
+              {page} / {pagination.total_pages}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={page >= pagination.total_pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Berikutnya
+            </Button>
+          </div>
         )}
       </div>
 
-      {/* Filter bar */}
-      <div className="flex flex-col gap-2 mb-4">
-        <div className="flex gap-2">
-          {(['', 'pemasukan', 'pengeluaran'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => {
-                setFilterTipe(t);
-                setPage(1);
-              }}
-              className={[
-                'flex-1 h-9 rounded-lg border text-sm font-medium transition-colors',
-                filterTipe === t
-                  ? 'border-primary-600 bg-primary-50 text-primary-700'
-                  : 'border-neutral-300 bg-white text-neutral-600',
-              ].join(' ')}
-            >
-              {t === '' ? 'Semua' : t === 'pemasukan' ? 'Masuk' : 'Keluar'}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="month"
-            value={filterBulan}
-            onChange={(e) => {
-              setFilterBulan(e.target.value);
-              setPage(1);
-            }}
-            aria-label="Filter bulan"
-            className="flex-1 h-9 rounded-lg border border-neutral-300 px-2 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <select
-            value={filterKategori}
-            onChange={(e) => {
-              setFilterKategori(e.target.value);
-              setPage(1);
-            }}
-            aria-label="Filter kategori"
-            className="flex-1 h-9 rounded-lg border border-neutral-300 px-2 text-sm text-neutral-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Semua Kategori</option>
-            {kategoriList.map((k) => (
-              <option key={k.id} value={k.id}>
-                {k.nama}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* List */}
-      {loading ? (
-        <SkeletonList count={4} />
-      ) : list.length === 0 ? (
-        <EmptyState
-          message="Belum ada transaksi"
-          hint="Transaksi kas akan muncul di sini"
-        />
-      ) : (
-        <div className="flex flex-col gap-2">
-          {list.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-start gap-3 bg-white rounded-xl border border-neutral-200/90 shadow-sm p-3.5 transition-all"
-            >
-              <div className="flex flex-col gap-1 items-start shrink-0">
-                <Badge
-                  label={t.tipe === 'pemasukan' ? 'Masuk' : 'Keluar'}
-                  variant={t.tipe === 'pemasukan' ? 'success' : 'danger'}
-                />
-                {t.referensi_tipe === 'penyesuaian_kas' && (
-                  <span className="text-[10px] font-bold bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
-                    PENYESUAIAN
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm text-neutral-900">
-                  {formatRupiah(t.nominal)}
-                </p>
-                {t.keterangan && (
-                  <p className="text-xs text-neutral-600 mt-0.5 font-medium line-clamp-2">
-                    {t.keterangan}
-                  </p>
-                )}
-                {t.kategori_nama && (
-                  <p className="text-[11px] text-neutral-400 mt-0.5">{t.kategori_nama}</p>
-                )}
-              </div>
-              <p className="text-xs text-neutral-400 shrink-0">
-                {new Date(t.dibuat_pada).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'short',
-                })}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Sebelumnya
-          </Button>
-          <span className="text-sm text-neutral-500">
-            {page} / {pagination.total_pages}
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page >= pagination.total_pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Berikutnya
-          </Button>
-        </div>
-      )}
-
-      {/* FAB — two buttons (symmetrical and centered) */}
-      <div className="fixed bottom-20 right-4 z-30 flex flex-col items-center gap-2.5">
-        <button
-          type="button"
+      {/* FAB — two buttons */}
+      <div className="fixed bottom-[120px] right-4 z-30 flex flex-col items-center gap-2.5">
+        <IconButton
+          icon={Minus}
+          label="Tambah pengeluaran"
+          variant="filled"
+          size="lg"
           onClick={() => openAdd('pengeluaran')}
-          aria-label="Tambah pengeluaran"
-          className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-danger-600 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 active:bg-danger-700"
-        >
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15" />
-          </svg>
-        </button>
-        <button
-          type="button"
+          className="bg-danger text-white hover:bg-danger/90"
+        />
+        <IconButton
+          icon={Plus}
+          label="Tambah pemasukan"
+          variant="filled"
+          size="lg"
           onClick={() => openAdd('pemasukan')}
-          aria-label="Tambah pemasukan"
-          className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-primary-600 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 active:bg-primary-700"
-        >
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            aria-hidden="true"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-        </button>
+        />
       </div>
 
       {/* Add sheet (Pemasukan / Pengeluaran Biasa) */}
@@ -539,21 +508,20 @@ function KasPageInner() {
         title={addTipe === 'pemasukan' ? 'Tambah Pemasukan' : 'Tambah Pengeluaran'}
       >
         <div className="flex flex-col gap-4">
-          <Input
-            label="Nominal (Rp)"
-            type="number"
+          <CurrencyInput
+            label="Nominal Transaksi"
             value={addNominal}
-            onChange={(e) => setAddNominal(e.target.value)}
-            min={1}
+            onChange={setAddNominal}
             placeholder="0"
+            quickAdds={[10000, 20000, 50000, 100000]}
           />
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-neutral-700">Kategori</label>
+            <label className="text-body font-medium text-ink-700">Kategori</label>
             <select
               value={addKategori}
               onChange={(e) => setAddKategori(e.target.value)}
-              className="h-11 w-full rounded-lg border border-neutral-300 px-3 text-base text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-body text-ink-900 focus:outline-none focus:ring-2 focus:ring-primary-700"
             >
               <option value="">Pilih Kategori</option>
               {filteredKategori.map((k) => (
@@ -572,7 +540,7 @@ function KasPageInner() {
           />
 
           {addError && (
-            <p className="text-sm text-danger-600" role="alert">
+            <p className="text-body text-danger" role="alert">
               {addError}
             </p>
           )}
@@ -596,58 +564,41 @@ function KasPageInner() {
       >
         <div className="flex flex-col gap-4">
           {/* Mode Switcher */}
-          <div className="flex bg-neutral-100 p-1 rounded-xl">
-            <button
-              type="button"
-              onClick={() => setPenyesuaianMode('set_saldo')}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                penyesuaianMode === 'set_saldo'
-                  ? 'bg-white text-neutral-900 shadow-sm'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              Atur Saldo Fisik (Opname)
-            </button>
-            <button
-              type="button"
-              onClick={() => setPenyesuaianMode('tambah_kurang')}
-              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                penyesuaianMode === 'tambah_kurang'
-                  ? 'bg-white text-neutral-900 shadow-sm'
-                  : 'text-neutral-600 hover:text-neutral-900'
-              }`}
-            >
-              Tambah / Kurang Saldo
-            </button>
-          </div>
+          <Tabs
+            tabs={[
+              { key: 'set_saldo', label: 'Atur Saldo Fisik (Opname)' },
+              { key: 'tambah_kurang', label: 'Tambah / Kurang Saldo' },
+            ]}
+            active={penyesuaianMode}
+            onChange={(k) => setPenyesuaianMode(k as typeof penyesuaianMode)}
+            variant="pill"
+          />
 
           {penyesuaianMode === 'set_saldo' ? (
             <div className="flex flex-col gap-3">
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                Masukkan jumlah saldo fisik riil kas saat ini (misal sisa <strong>Rp 500.000</strong>).
-                Sistem akan menghitung penyesuaian otomatis agar saldo kas sama persis.
+              <p className="text-caption text-ink-400 leading-relaxed">
+                Masukkan jumlah saldo fisik riil kas saat ini. Sistem akan menghitung penyesuaian otomatis agar saldo kas sama persis.
               </p>
 
-              <Input
-                label="Target Saldo Kas Riil (Rp)"
-                type="number"
-                min={0}
+              <CurrencyInput
+                label="Target Saldo Kas Riil"
                 value={targetSaldoInput}
-                onChange={(e) => setTargetSaldoInput(e.target.value)}
+                onChange={setTargetSaldoInput}
                 placeholder="0"
+                quickAdds={[50000, 100000, 200000, 500000]}
               />
 
               {/* Live Preview */}
-              <div className="bg-primary-50 border border-primary-200/80 rounded-xl p-3 text-xs flex flex-col gap-1">
-                <div className="flex justify-between text-primary-900 font-semibold">
+              <div className="bg-primary-100 border border-primary-100 rounded-xl p-3 text-caption flex flex-col gap-1">
+                <div className="flex justify-between text-primary-900 font-semibold nums">
                   <span>Target Saldo Kas:</span>
                   <span>{formatRupiah(targetSaldoNum)}</span>
                 </div>
-                <div className="flex justify-between text-neutral-600">
+                <div className="flex justify-between text-ink-600 nums">
                   <span>Saldo Kas saat ini:</span>
                   <span>{formatRupiah(currentSaldoNum)}</span>
                 </div>
-                <div className="flex justify-between text-primary-800 border-t border-primary-200/60 pt-1 mt-0.5">
+                <div className="flex justify-between text-primary-700 border-t border-primary-100 pt-1 mt-0.5 nums">
                   <span>Penyesuaian yang dicatat:</span>
                   <span className="font-bold">
                     {previewDiff === 0
@@ -660,7 +611,7 @@ function KasPageInner() {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-neutral-700">
+                <label className="text-caption font-medium text-ink-700">
                   Keterangan / Alasan (Opsional)
                 </label>
                 <input
@@ -668,66 +619,63 @@ function KasPageInner() {
                   value={penyesuaianAlasan}
                   onChange={(e) => setPenyesuaianAlasan(e.target.value)}
                   placeholder={`Contoh: Pencatatan sisa fisik kas (${formatRupiah(targetSaldoNum)})`}
-                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-body text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-primary-700"
                 />
               </div>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                Pilih operasi untuk menambah (misal saldo awal/hibah) atau mengurangi saldo kas (misal selisih hitung/biaya tak tercatat).
+              <p className="text-caption text-ink-400 leading-relaxed">
+                Pilih operasi untuk menambah atau mengurangi saldo kas.
               </p>
 
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setOperasiTipe('-')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                  className={`flex-1 py-1.5 text-caption font-bold rounded-lg border transition-all ${
                     operasiTipe === '-'
-                      ? 'bg-rose-50 border-rose-300 text-rose-700'
-                      : 'border-neutral-200 text-neutral-600'
+                      ? 'bg-danger-tonal border-danger/30 text-danger'
+                      : 'border-line text-ink-600'
                   }`}
                 >
-                  - Kurang Kas (Selisih/Pengeluaran)
+                  - Kurang Kas
                 </button>
                 <button
                   type="button"
                   onClick={() => setOperasiTipe('+')}
-                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+                  className={`flex-1 py-1.5 text-caption font-bold rounded-lg border transition-all ${
                     operasiTipe === '+'
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                      : 'border-neutral-200 text-neutral-600'
+                      ? 'bg-tint-mint border-icon-mint/30 text-icon-mint'
+                      : 'border-line text-ink-600'
                   }`}
                 >
-                  + Tambah Kas (Saldo Awal/Pemasukan)
+                  + Tambah Kas
                 </button>
               </div>
 
-              <Input
-                label="Nominal Penyesuaian (Rp)"
-                type="number"
-                min={1}
+              <CurrencyInput
+                label="Nominal Penyesuaian"
                 value={adjNominalInput}
-                onChange={(e) => setAdjNominalInput(e.target.value)}
-                placeholder="Contoh: 50000"
+                onChange={setAdjNominalInput}
+                placeholder="0"
+                quickAdds={[10000, 20000, 50000, 100000]}
               />
 
               {/* Live Preview */}
-              <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3 text-xs flex flex-col gap-1">
-                <div className="flex justify-between text-neutral-700">
+              <div className="bg-peach-100 border border-line rounded-xl p-3 text-caption flex flex-col gap-1">
+                <div className="flex justify-between text-ink-700 nums">
                   <span>Perubahan Kas:</span>
-                  <span className="font-bold">
-                    {operasiTipe}{formatRupiah(adjNominalNum)}
-                  </span>
+                  <span className="font-bold">{operasiTipe}{formatRupiah(adjNominalNum)}</span>
                 </div>
-                <div className="flex justify-between text-neutral-900 border-t border-neutral-200 pt-1 mt-0.5 font-semibold">
+                <div className="flex justify-between text-ink-900 border-t border-line pt-1 mt-0.5 font-semibold nums">
                   <span>Estimasi Saldo Kas Baru:</span>
                   <span className="text-primary-700 font-bold">{formatRupiah(previewNewSaldo)}</span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-neutral-700">
+                <label className="text-caption font-medium text-ink-700">
                   Alasan Penyesuaian (Wajib)
                 </label>
                 <textarea
@@ -735,14 +683,14 @@ function KasPageInner() {
                   onChange={(e) => setPenyesuaianAlasan(e.target.value)}
                   placeholder="Contoh: Selisih uang receh / Uang kas awal bulan"
                   rows={2}
-                  className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-body text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-primary-700"
                 />
               </div>
             </div>
           )}
 
           {penyesuaianError && (
-            <p className="text-sm text-danger-600" role="alert">
+            <p className="text-body text-danger" role="alert">
               {penyesuaianError}
             </p>
           )}
@@ -773,7 +721,7 @@ function KasPageInner() {
 
 export default function KasPage() {
   return (
-    <Suspense fallback={<div className="p-4 text-center text-sm text-neutral-500">Memuat data kas...</div>}>
+    <Suspense fallback={<div className="px-5 py-4 text-center text-body text-ink-400">Memuat data kas...</div>}>
       <KasPageInner />
     </Suspense>
   );

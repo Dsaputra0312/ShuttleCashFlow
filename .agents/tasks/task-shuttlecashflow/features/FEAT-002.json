@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Komponen UI Core (primitif): ikon wrapper (AppIcon, ShuttlecockIcon, IconTile), Avatar, dan semua komponen input/primitif yang diperlukan sebelum membangun komponen composite. Bergantung pada FEAT-001 (token + lucide-react + cva harus sudah terpasang). Komponen ini direferensi oleh FEAT-003 (composite) dan FEAT-004 (halaman).",
+  "status": "completed",
+  "steps": [
+    "Buat src/components/ui/AppIcon.tsx: wrapper lucide-react. Props: `icon: LucideIcon`, `size?: 'sm'|'md'` (default sm=20, md=24), `className?`, `strokeWidth=1.75`. Render <Icon.size className strokeWidth aria-hidden />.",
+    "Buat src/components/ui/ShuttlecockIcon.tsx: komponen SVG custom imitasi style Lucide (viewBox 0 0 24 24, stroke currentColor, strokeWidth 1.75, strokeLinecap round, strokeLinejoin round, fill none). Gambar shuttlecock sederhana (lingkaran kecil di bawah + bulu kipas ke atas). Props: `size=24`, `className`. Digunakan di BottomNav dan menu stok bola.",
+    "Buat src/components/ui/IconTile.tsx: kotak radius-lg, latar tint-*, ikon icon-* di tengah via AppIcon. Props: `tint: 'orange'|'lavender'|'mint'|'peach'`, `icon: LucideIcon`, `size?: 40|48` (default 40). Mapping tint→latar dan icon-color di satu konstanta: orange→bg-tint-orange text-icon-orange, lavender→bg-tint-lavender text-icon-lavender, mint→bg-tint-mint text-icon-mint, peach→bg-tint-peach text-icon-rose.",
+    "Buat src/components/ui/Avatar.tsx: lingkaran inisial 2 huruf dari nama. Warna pastel dipilih deterministik dari hash nama di antara tint-orange/lavender/mint/peach. Teks pakai icon-color sesuai tint. Props: `name: string`, `size?: 'sm'|'md'|'lg'` (32/40/48). 'use client' tidak perlu (stateless).",
+    "Revamp src/components/ui/Button.tsx pakai CVA: varian primary (bg-primary-700 text-white hover:bg-primary-900), tonal (bg-primary-100 text-primary-700), ghost (bg-transparent text-primary-700 hover:bg-primary-100), destructive (bg-danger text-white). Size sm (h-9 px-3 text-sm rounded-md), md (h-11 px-4 text-body rounded-lg), lg (h-[52px] px-6 rounded-lg). Base: inline-flex items-center justify-center font-medium transition-all active:scale-[0.98] focus-visible:ring-2 ring-primary-500. Pertahankan props loading (spinner), disabled, dan kompatibilitas React.ButtonHTMLAttributes yang sudah ada agar pemanggil lama tidak rusak (varian 'secondary' lama dapat di-map ke 'tonal'; pertahankan 'secondary' sebagai alias 'tonal' agar transisi halaman bertahap aman).",
+    "Buat src/components/ui/IconButton.tsx: tombol ikon-only. Props: `icon: LucideIcon`, `label: string` (aria-label wajib), `variant?: 'ghost'|'tonal'|'filled'`, `size?: 'sm'|'md'|'lg'` (40/44/48). rounded-full. focus ring.",
+    "Revamp src/components/ui/Input.tsx: border-line, focus ring primary-700, label caption token, placeholder ink-400, error text danger. Pertahankan props yang ada (label, error, hint, rightElement, id, aria). Jangan ubah API agar halaman lama tetap kompatibel.",
+    "Buat src/components/ui/CurrencyInput.tsx: extend Input. Format Rupiah `Rp1.250.000` saat blur (formatRibuan), terima integer. `tabular-nums`. Props: `value`, `onChange: (integer:number)=>void`. Gunakan formatRupiah-style parser. 'use client'.",
+    "Buat src/components/ui/Select.tsx: styled native <select> konsisten dengan Input (h-11, border-line, focus ring primary-700, rounded-lg). Props: label, error, hint, value, onChange, children <option>.",
+    "Buat src/components/ui/Textarea.tsx: styled <textarea> konsisten dengan Input (border-line, focus ring, rounded-lg, padding). Props: label, error, hint, rows.",
+    "Buat src/components/ui/Switch.tsx (rename dari Toggle.tsx): pertahankan fungsionalitas Toggle (role=switch, checked, onChange, disabled, aria-label) tapi warna aktif bg-primary-700, track bg-line saat off, knob bg-surface. Buat file baru Switch.tsx dan biarkan Toggle.tsx tetap sebagai re-export agar import lama tidak rusak, ATAU update semua import — pilih: buat Switch.tsx baru dan jadikan Toggle.tsx re-export `export { Switch as Toggle } from './Switch'`.",
+    "Revamp src/components/ui/Stepper.tsx: tombol − dan + ukuran 48x48 (w-12 h-12), angka tengah min-w, border-line, rounded-md, bg-surface, hover bg-peach-100. Pertahankan API (value, onChange, min, max, step, label, disabled).",
+    "Revamp src/components/ui/Chip.tsx pakai CVA: selected = bg-primary-700 text-white, unselected = bg-peach-100 text-ink-600 border border-line. rounded-full. Pertahankan API (label, selected, onSelect/onClick, disabled, size sm/md).",
+    "Buat src/components/ui/SearchField.tsx: Input dengan ikon Search (lucide) di kiri via AppIcon dan tombol clear X di kanan (muncul bila value non-empty). Props: value, onChange, placeholder, id, aria-label. 'use client'.",
+    "Buat src/components/ui/Tabs.tsx: pill segmented control. Props: `tabs: {key,label}[]`, `active`, `onChange: (key)=>void`, `variant?: 'pill'|'underline'`. Pill: bg-peach-100 container, item aktif bg-surface text-primary-700 shadow-card. Underline: item aktif border-b-2 border-primary-700 text-primary-700. 'use client'.",
+    "Revamp src/components/ui/Badge.tsx pakai CVA dengan SEMUA varian domain dari plan section 3a (member, non-member, bebas-biaya, bermain, selesai, lunas, belum-lunas, terkunci, aktif, non-aktif, default, success, danger, warning, info). Mapping latar→teks dipusatkan di satu konstanta. Pertahankan prop `label`. Agar halaman lama kompatibel, varian lama ('success','danger','warning','info','default') dipetakan ke mapping baru yang setara visual. rounded-full px-2.5 py-0.5 text-caption.",
+    "Revamp src/components/ui/Skeleton.tsx: ganti bg-neutral-200 ke bg-peach-100, rounded-md. Pertahankan Skeleton, SkeletonCard, SkeletonList exports."
+  ],
+  "acceptance_criteria": [
+    "`pnpm build` lolos tanpa error.",
+    "`pnpm lint` lolos.",
+    "Semua file komponen di steps ada di src/components/ui/ dan diekspor dengan named export.",
+    "Button, Badge, Chip memakai class-variance-authority.",
+    "Tidak ada emoji atau inline hex/rgb di komponen (kecuali ShuttlecockIcon SVG yang menggunakan currentColor).",
+    "Toggle.tsx tetap bisa diimport (re-export Switch) sehingga import lama tidak rusak."
+  ],
+  "verification": [
+    "Jalankan `pnpm build` — exit code 0.",
+    "Jalankan `pnpm lint` — lolos.",
+    "Konfirmasi import `lucide-react` dan `class-variance-authority` berhasil di komponen (build akan gagal bila paket belum terpasang dengan benar)."
+  ],
+  "blocked_reason": null,
+  "findings": "All FEAT-002 components created/revamped. Backward-compatible aliases: Button keeps 'secondary' (→tonal) and 'danger' (→destructive); Toggle.tsx re-exports Switch as Toggle so all existing imports (TambahSesiSheet, SelesaikanSesiSheet, PemainForm) continue to work. Input gains leftElement prop (required by SearchField). Badge has all 15 domain variants via CVA. pnpm build exit 0; pnpm lint exit 0 (clean, no warnings)."
+}

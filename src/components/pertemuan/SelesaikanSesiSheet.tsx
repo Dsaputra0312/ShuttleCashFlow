@@ -5,7 +5,7 @@ import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Stepper } from '@/components/ui/Stepper';
 import { Chip } from '@/components/ui/Chip';
-import { Toggle } from '@/components/ui/Toggle';
+import { Switch } from '@/components/ui/Switch';
 
 interface SesiRow {
   id: string;
@@ -92,7 +92,7 @@ export function SelesaikanSesiSheet({
       <div className="flex flex-col gap-4">
         {/* Players info */}
         <div>
-          <p className="text-xs font-medium text-neutral-500 mb-1.5 uppercase tracking-wider">
+          <p className="text-caption font-medium text-ink-400 mb-1.5 uppercase tracking-wider">
             Pemain ({sesi.pemain_ids.length} orang)
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -119,10 +119,10 @@ export function SelesaikanSesiSheet({
               return next;
             });
           }}
-          className="flex items-center justify-between w-full h-11 px-3 rounded-lg border border-neutral-200 bg-neutral-50 hover:bg-neutral-100/60 transition-colors cursor-pointer select-none"
+          className="flex items-center justify-between w-full h-11 px-3 rounded-lg border border-line bg-peach-100 hover:bg-peach-200 transition-colors cursor-pointer select-none"
         >
-          <span className="text-sm text-neutral-700">Ditanggung seseorang</span>
-          <Toggle
+          <span className="text-body text-ink-700">Ditanggung seseorang</span>
+          <Switch
             checked={ditanggung}
             onChange={(checked) => {
               setDitanggung(checked);
@@ -134,7 +134,7 @@ export function SelesaikanSesiSheet({
 
         {ditanggung && (
           <div>
-            <p className="text-sm font-medium text-neutral-700 mb-2">Pilih Penanggung</p>
+            <p className="text-body font-medium text-ink-700 mb-2">Pilih Penanggung</p>
             <div className="flex flex-wrap gap-1.5">
               {sesi.pemain_ids.map((id) => (
                 <Chip
@@ -150,7 +150,7 @@ export function SelesaikanSesiSheet({
         )}
 
         {error && (
-          <p className="text-sm text-danger-600 bg-danger-50 border border-danger-200 rounded-lg p-2.5" role="alert">
+          <p className="text-body text-danger bg-danger-tonal border border-danger/20 rounded-lg p-2.5" role="alert">
             {error}
           </p>
         )}
@@ -170,7 +170,7 @@ export function SelesaikanSesiSheet({
             loading={loading}
             className="flex-1"
           >
-            Simpan & Selesai
+            Simpan &amp; Selesai
           </Button>
         </div>
       </div>

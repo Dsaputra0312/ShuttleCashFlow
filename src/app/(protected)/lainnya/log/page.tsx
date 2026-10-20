@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { Card } from '@/components/ui/Card';
+import { Timeline } from '@/components/ui/Timeline';
+import { SearchField } from '@/components/ui/SearchField';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { SkeletonList } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -27,6 +31,7 @@ interface Pagination {
 }
 
 export default function LogPage() {
+  const router = useRouter();
   const { toasts, addToast, dismiss } = useToast();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
@@ -74,79 +79,91 @@ export default function LogPage() {
     }).format(new Date(iso));
   };
 
-  return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold text-neutral-900 mb-4">Log Aktivitas</h1>
+  const timelineItems = logs.map((log) => ({
+    time: formatDate(log.dibuat_pada),
+    content: (
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-caption font-mono bg-peach-100 text-ink-900 rounded px-2 py-0.5 font-medium">
+            {log.aksi}
+          </span>
+          <span className="font-heading text-caption text-ink-900">
+            {log.entitas}
+            {log.entitas_id && (
+              <span className="text-ink-400 font-normal"> #{log.entitas_id.slice(0, 8)}</span>
+            )}
+          </span>
+        </div>
+        {log.admin_nama && (
+          <p className="text-caption text-ink-600">oleh {log.admin_nama}</p>
+        )}
+        {log.alasan && (
+          <p className="text-caption text-ink-600 italic">Alasan: {log.alasan}</p>
+        )}
+      </div>
+    ),
+  }));
 
-      <Input
-        placeholder="Cari aksi..."
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value);
-          setPage(1);
-        }}
+  return (
+    <div>
+      <PageHeader
+        title="Log Aktivitas"
+        onBack={() => router.push('/lainnya')}
       />
 
-      <div className="mt-4 flex flex-col gap-3">
-        {loading && <SkeletonList count={4} />}
+      <div className="p-4 max-w-xl mx-auto">
+        <SearchField
+          placeholder="Cari aksi..."
+          value={search}
+          onChange={(val) => {
+            setSearch(val);
+            setPage(1);
+          }}
+        />
 
-        {!loading && logs.length === 0 && (
-          <EmptyState
-            message="Belum ada aktivitas"
-            hint="Aktivitas admin akan dicatat secara otomatis di sini"
-          />
+        <div className="mt-4 flex flex-col gap-3">
+          {loading && <SkeletonList count={4} />}
+
+          {!loading && logs.length === 0 && (
+            <EmptyState
+              message="Belum ada aktivitas"
+              hint="Aktivitas admin akan dicatat secara otomatis di sini"
+            />
+          )}
+
+          {!loading && timelineItems.length > 0 && (
+            <Card padding className="mt-2">
+              <Timeline items={timelineItems} />
+            </Card>
+          )}
+        </div>
+
+        {pagination && pagination.total_pages > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <Button
+              variant="tonal"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Sebelumnya
+            </Button>
+            <span className="text-caption text-ink-600">
+              {page} / {pagination.total_pages}
+            </span>
+            <Button
+              variant="tonal"
+              size="sm"
+              disabled={page >= pagination.total_pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Berikutnya
+            </Button>
+          </div>
         )}
 
-        {logs.map((log) => (
-          <div
-            key={log.id}
-            className="bg-white rounded-xl border border-neutral-200 shadow-sm p-4"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <span className="text-xs font-mono bg-neutral-100 text-neutral-700 rounded px-2 py-0.5 shrink-0">
-                {log.aksi}
-              </span>
-              <span className="text-xs text-neutral-400">{formatDate(log.dibuat_pada)}</span>
-            </div>
-            <p className="text-sm text-neutral-700 mt-1.5">
-              <span className="font-medium">{log.entitas}</span>
-              {log.entitas_id && <span className="text-neutral-400"> #{log.entitas_id.slice(0, 8)}</span>}
-            </p>
-            {log.admin_nama && (
-              <p className="text-xs text-neutral-500 mt-1">oleh {log.admin_nama}</p>
-            )}
-            {log.alasan && (
-              <p className="text-xs text-neutral-500 mt-1 italic">Alasan: {log.alasan}</p>
-            )}
-          </div>
-        ))}
+        <ToastContainer toasts={toasts} onDismiss={dismiss} />
       </div>
-
-      {pagination && pagination.total_pages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Sebelumnya
-          </Button>
-          <span className="text-sm text-neutral-500">
-            {page} / {pagination.total_pages}
-          </span>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={page >= pagination.total_pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Berikutnya
-          </Button>
-        </div>
-      )}
-
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </div>
   );
 }
