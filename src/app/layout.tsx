@@ -15,6 +15,11 @@ export const metadata: Metadata = {
   title: 'ShuttleCashFlow',
   description: 'Manajemen keuangan dan shuttlecock grup badminton',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icons/icon-192x192.png',
+    shortcut: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
