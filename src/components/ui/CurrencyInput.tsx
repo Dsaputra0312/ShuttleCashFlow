@@ -80,7 +80,7 @@ export function CurrencyInput({
         placeholder={placeholder}
         value={displayValue}
         onChange={handleChange}
-        leftElement={<span className="font-semibold text-ink-600 text-[13px] select-none">Rp</span>}
+        leftElement={<span className="font-semibold text-ink-600 text-[12px] select-none">Rp</span>}
         className={['nums font-semibold tracking-wide', className].filter(Boolean).join(' ')}
       />
 

@@ -61,21 +61,39 @@
   --shadow-card: 0 4px 16px rgba(40,64,143,0.06);
   --shadow-float: 0 12px 32px rgba(40,64,143,0.12);
 
-  /* ── Typography: font size ── */
-  --font-size-display: 36px;
-  --font-size-title-lg: 24px;
-  --font-size-title: 20px;
-  --font-size-heading: 16px;
-  --font-size-body: 14px;
-  --font-size-caption: 12px;
+  /* ── Typography: font size (reduced scale for compact mobile UX) ── */
+  --font-size-display: 28px;
+  --font-size-title-lg: 20px;
+  --font-size-title: 17px;
+  --font-size-heading: 14px;
+  --font-size-body: 13px;
+  --font-size-caption: 11px;
 
   /* ── Typography: line height ── */
-  --line-height-display: 44px;
-  --line-height-title-lg: 32px;
-  --line-height-title: 28px;
-  --line-height-heading: 24px;
-  --line-height-body: 20px;
-  --line-height-caption: 16px;
+  --line-height-display: 34px;
+  --line-height-title-lg: 26px;
+  --line-height-title: 23px;
+  --line-height-heading: 20px;
+  --line-height-body: 18px;
+  --line-height-caption: 15px;
+
+  /* ── Typography: standard text scales (proportionately reduced) ── */
+  --text-xs: 11px;
+  --text-xs--line-height: 15px;
+  --text-sm: 12.5px;
+  --text-sm--line-height: 17px;
+  --text-base: 13.5px;
+  --text-base--line-height: 19px;
+  --text-lg: 15px;
+  --text-lg--line-height: 21px;
+  --text-xl: 17px;
+  --text-xl--line-height: 23px;
+  --text-2xl: 20px;
+  --text-2xl--line-height: 26px;
+  --text-3xl: 24px;
+  --text-3xl--line-height: 30px;
+  --text-4xl: 28px;
+  --text-4xl--line-height: 34px;
 
   /* ── Typography: font weight ── */
   --font-weight-display: 800;
@@ -101,8 +119,17 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
   /* Prevent horizontal scroll on mobile */
   overflow-x: hidden;
+}
+
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
 }
 
 * {

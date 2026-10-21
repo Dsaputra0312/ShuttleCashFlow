@@ -55,7 +55,7 @@ export function PageHeader({ title, onBack, action, className = '' }: PageHeader
       </div>
 
       {/* Center: title */}
-      <h1 className="flex-1 text-center font-heading font-bold text-[17px] text-ink-900 truncate tracking-tight">
+      <h1 className="flex-1 text-center font-heading font-bold text-[15px] text-ink-900 truncate tracking-tight">
         {title}
       </h1>
 

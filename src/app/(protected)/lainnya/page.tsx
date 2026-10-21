@@ -138,7 +138,7 @@ export default function LainnyaPage() {
                 >
                   <IconTile tint={item.tint} icon={item.icon} size={48} className="rounded-2xl shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors text-[15px]">
+                    <p className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors text-heading">
                       {item.label}
                     </p>
                     <p className="text-caption text-ink-600 mt-0.5 leading-snug line-clamp-1">
@@ -176,7 +176,7 @@ export default function LainnyaPage() {
               <AppIcon icon={LogOut} size="md" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-heading font-semibold text-danger text-[15px]">
+              <p className="font-heading font-semibold text-danger text-heading">
                 {loggingOut ? 'Keluar...' : 'Keluar'}
               </p>
               <p className="text-caption text-ink-600 mt-0.5">Logout dari akun Anda</p>

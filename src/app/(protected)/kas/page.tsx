@@ -339,7 +339,7 @@ function KasPageInner() {
             <HeroCard
               title="Saldo Kas Saat Ini"
               value={formatRupiah(saldoInfo?.saldo_saat_ini ?? 0)}
-              subtitle="Kas siap pakai untuk operasional grup"
+              subtitle="Kas siap dipakai"
             />
             {saldoInfo && (
               <div className="mt-3 flex gap-2">
@@ -604,8 +604,8 @@ function KasPageInner() {
                     {previewDiff === 0
                       ? 'Tidak ada perubahan'
                       : previewDiff > 0
-                      ? `+${formatRupiah(previewDiff)} (Pemasukan)`
-                      : `-${formatRupiah(Math.abs(previewDiff))} (Pengeluaran)`}
+                        ? `+${formatRupiah(previewDiff)} (Pemasukan)`
+                        : `-${formatRupiah(Math.abs(previewDiff))} (Pengeluaran)`}
                   </span>
                 </div>
               </div>
@@ -633,22 +633,20 @@ function KasPageInner() {
                 <button
                   type="button"
                   onClick={() => setOperasiTipe('-')}
-                  className={`flex-1 py-1.5 text-caption font-bold rounded-lg border transition-all ${
-                    operasiTipe === '-'
-                      ? 'bg-danger-tonal border-danger/30 text-danger'
-                      : 'border-line text-ink-600'
-                  }`}
+                  className={`flex-1 py-1.5 text-caption font-bold rounded-lg border transition-all ${operasiTipe === '-'
+                    ? 'bg-danger-tonal border-danger/30 text-danger'
+                    : 'border-line text-ink-600'
+                    }`}
                 >
                   - Kurang Kas
                 </button>
                 <button
                   type="button"
                   onClick={() => setOperasiTipe('+')}
-                  className={`flex-1 py-1.5 text-caption font-bold rounded-lg border transition-all ${
-                    operasiTipe === '+'
-                      ? 'bg-tint-mint border-icon-mint/30 text-icon-mint'
-                      : 'border-line text-ink-600'
-                  }`}
+                  className={`flex-1 py-1.5 text-caption font-bold rounded-lg border transition-all ${operasiTipe === '+'
+                    ? 'bg-tint-mint border-icon-mint/30 text-icon-mint'
+                    : 'border-line text-ink-600'
+                    }`}
                 >
                   + Tambah Kas
                 </button>

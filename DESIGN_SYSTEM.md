@@ -37,16 +37,16 @@
 
 ---
 
-## 2. Typography Scale
+## 2. Typography Scale (Mobile-Optimized Compact Scale)
 
 | Token | Size | Line Height | Weight | Typical Usage |
 |---|---|---|---|---|
-| `display` | 36px | 44px | 800 | Big Dashboard Metrics |
-| `title-lg`| 24px | 32px | 700 | Page Header & Section Title |
-| `title`   | 20px | 28px | 700 | Modal / Sheet Title |
-| `heading` | 16px | 24px | 600 | Card Title, Player Name |
-| `body`    | 14px | 20px | 400 | Standard Labels, Form Inputs |
-| `caption` | 12px | 16px | 500 | Badges, Helper Text, Chips |
+| `display` | 28px | 34px | 800 | Big Dashboard Metrics |
+| `title-lg`| 20px | 26px | 700 | Page Header & Section Title |
+| `title`   | 17px | 23px | 700 | Modal / Sheet Title |
+| `heading` | 14px | 20px | 600 | Card Title, Player Name |
+| `body`    | 13px | 18px | 400 | Standard Labels, Form Inputs |
+| `caption` | 11px | 15px | 500 | Badges, Helper Text, Chips |
 
 ---
 

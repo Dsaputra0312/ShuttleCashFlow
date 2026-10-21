@@ -365,7 +365,7 @@ export default function PemainPage() {
                       <Avatar name={p.nama} size="md" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors truncate text-[15px]">
+                          <span className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors truncate text-heading">
                             {p.nama}
                           </span>
                           {p.is_member ? (

@@ -9,6 +9,7 @@ import {
   ArrowUpRight,
   Share2,
   FileText,
+  ChevronDown,
 } from 'lucide-react';
 import { formatRupiah } from '@/lib/money';
 import { HeroCard } from '@/components/ui/HeroCard';
@@ -208,7 +209,8 @@ export default function BerandaPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Rekap WA Sheet
+  // Rekap WA Sheet & Accordion Laporan
+  const [laporanExpanded, setLaporanExpanded] = useState(false);
   const [rekapSheetOpen, setRekapSheetOpen] = useState(false);
   const [rekapTeks, setRekapTeks] = useState('');
 
@@ -402,152 +404,175 @@ export default function BerandaPage() {
         </div>
       </Section>
 
-      {/* Laporan Kas Pertemuan Terakhir */}
+      {/* Laporan Kas Pertemuan Terakhir (Accordion) */}
       {pertemuanTerakhir && (
         <Section className="pt-0">
-          <div className="bg-surface rounded-2xl border border-line shadow-card p-4 flex flex-col gap-3.5">
-            {/* Header Card */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700">
+          <div className="bg-surface rounded-2xl border border-line shadow-card overflow-hidden transition-all duration-200">
+            {/* Header Card (Accordion Toggle) */}
+            <button
+              type="button"
+              onClick={() => setLaporanExpanded((prev) => !prev)}
+              className="w-full p-4 flex items-center justify-between text-left focus:outline-none transition-colors hover:bg-peach-50/50 cursor-pointer"
+              aria-expanded={laporanExpanded}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 shrink-0">
                   <FileText className="w-5 h-5" />
                 </div>
-                <div>
-                  <h3 className="font-heading font-bold text-ink-900 text-[15px] leading-tight">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-heading font-bold text-ink-900 text-[13px] leading-snug">
                     Laporan Pertemuan Terakhir
                   </h3>
-                  <p className="text-caption text-ink-500 mt-0.5">
+                  <p className="text-caption text-ink-500 mt-0.5 truncate">
                     {formatTanggalLengkap(pertemuanTerakhir.tanggal)}
                   </p>
                 </div>
               </div>
 
-              <span
-                className={`px-2.5 py-1 rounded-full text-caption font-semibold ${pertemuanTerakhir.terkunci
-                    ? 'bg-ink-100 text-ink-700'
-                    : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+              <div className="flex items-center gap-2 shrink-0">
+                <span
+                  className={`px-2.5 py-1 rounded-full text-caption font-semibold ${
+                    pertemuanTerakhir.terkunci
+                      ? 'bg-ink-100 text-ink-700'
+                      : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                   }`}
-              >
-                {pertemuanTerakhir.terkunci ? 'Terkunci' : 'Aktif'}
-              </span>
-            </div>
-
-            {/* 4 Financial Report Metrics */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* 1. Saldo Sebelum Pertemuan Terakhir */}
-              <div className="bg-peach-50/70 rounded-xl border border-line/60 p-2.5 flex flex-col gap-0.5">
-                <span className="text-[11px] font-medium text-ink-500">Saldo Sebelum</span>
-                <span className="text-body font-bold text-ink-800 nums truncate">
-                  {formatRupiah(pertemuanTerakhir.saldo_sebelum)}
+                >
+                  {pertemuanTerakhir.terkunci ? 'Terkunci' : 'Aktif'}
                 </span>
-              </div>
-
-              {/* 2. Jumlah Pemasukan Pertemuan Terakhir */}
-              <div className="bg-emerald-50/60 rounded-xl border border-emerald-200/60 p-2.5 flex flex-col gap-0.5">
-                <span className="text-[11px] font-medium text-emerald-700">Pemasukan</span>
-                <span className="text-body font-bold text-emerald-700 nums truncate">
-                  +{formatRupiah(pertemuanTerakhir.pemasukan)}
-                </span>
-              </div>
-
-              {/* 3. Jumlah Pengeluaran Pertemuan Terakhir */}
-              <div className="bg-pink-50/60 rounded-xl border border-pink-200/60 p-2.5 flex flex-col gap-0.5">
-                <span className="text-[11px] font-medium text-danger">Pengeluaran</span>
-                <span className="text-body font-bold text-danger nums truncate">
-                  -{formatRupiah(pertemuanTerakhir.pengeluaran)}
-                </span>
-              </div>
-
-              {/* 4. Saldo Saat Ini */}
-              <div className="bg-primary-50/60 rounded-xl border border-primary-200/60 p-2.5 flex flex-col gap-0.5">
-                <span className="text-[11px] font-semibold text-primary-700">Saldo Saat Ini</span>
-                <span className="text-body font-extrabold text-primary-700 nums truncate">
-                  {formatRupiah(pertemuanTerakhir.saldo_saat_ini)}
-                </span>
-              </div>
-            </div>
-
-            {/* Breakdown Rincian Pemasukan & Pengeluaran */}
-            <div className="flex flex-col gap-2.5 pt-2 border-t border-line/60">
-              {/* Rincian Pemasukan */}
-              <div className="rounded-xl bg-emerald-50/50 border border-emerald-100/80 p-2.5 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-[11px] font-bold text-emerald-800">
-                  <span className="flex items-center gap-1">
-                    <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
-                    Rincian Pemasukan
-                  </span>
-                  <span className="nums">+{formatRupiah(pertemuanTerakhir.pemasukan)}</span>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  {pertemuanTerakhir.rincian_pemasukan && pertemuanTerakhir.rincian_pemasukan.length > 0 ? (
-                    pertemuanTerakhir.rincian_pemasukan.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-caption text-ink-700">
-                        <span className="text-ink-600 flex items-center gap-1.5 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                          <span className="truncate">{item.deskripsi}</span>
-                        </span>
-                        <span className="font-semibold text-ink-900 nums shrink-0 pl-2">
-                          {formatRupiah(item.nominal)}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="text-caption text-ink-400 italic">Belum ada pemasukan</span>
-                  )}
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 ${
+                    laporanExpanded
+                      ? 'bg-primary-100 text-primary-700 rotate-180'
+                      : 'bg-peach-100 text-ink-600'
+                  }`}
+                  aria-hidden="true"
+                >
+                  <ChevronDown className="w-4 h-4" />
                 </div>
               </div>
+            </button>
 
-              {/* Rincian Pengeluaran */}
-              <div className="rounded-xl bg-pink-50/50 border border-pink-100/80 p-2.5 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-[11px] font-bold text-danger">
-                  <span className="flex items-center gap-1">
-                    <ArrowUpRight className="w-3.5 h-3.5 text-danger" />
-                    Rincian Pengeluaran
-                  </span>
-                  <span className="nums">-{formatRupiah(pertemuanTerakhir.pengeluaran)}</span>
+            {/* Accordion Body */}
+            {laporanExpanded && (
+              <div className="px-4 pb-4 pt-1 flex flex-col gap-3.5 border-t border-line/60">
+                {/* 4 Financial Report Metrics */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* 1. Saldo Sebelum Pertemuan Terakhir */}
+                  <div className="bg-peach-50/70 rounded-xl border border-line/60 p-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] font-medium text-ink-500">Saldo Sebelum</span>
+                    <span className="text-body font-bold text-ink-800 nums truncate">
+                      {formatRupiah(pertemuanTerakhir.saldo_sebelum)}
+                    </span>
+                  </div>
+
+                  {/* 2. Jumlah Pemasukan Pertemuan Terakhir */}
+                  <div className="bg-emerald-50/60 rounded-xl border border-emerald-200/60 p-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] font-medium text-emerald-700">Pemasukan</span>
+                    <span className="text-body font-bold text-emerald-700 nums truncate">
+                      +{formatRupiah(pertemuanTerakhir.pemasukan)}
+                    </span>
+                  </div>
+
+                  {/* 3. Jumlah Pengeluaran Pertemuan Terakhir */}
+                  <div className="bg-pink-50/60 rounded-xl border border-pink-200/60 p-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] font-medium text-danger">Pengeluaran</span>
+                    <span className="text-body font-bold text-danger nums truncate">
+                      -{formatRupiah(pertemuanTerakhir.pengeluaran)}
+                    </span>
+                  </div>
+
+                  {/* 4. Saldo Saat Ini */}
+                  <div className="bg-primary-50/60 rounded-xl border border-primary-200/60 p-2.5 flex flex-col gap-0.5">
+                    <span className="text-[10px] font-semibold text-primary-700">Saldo Saat Ini</span>
+                    <span className="text-body font-extrabold text-primary-700 nums truncate">
+                      {formatRupiah(pertemuanTerakhir.saldo_saat_ini)}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  {pertemuanTerakhir.rincian_pengeluaran && pertemuanTerakhir.rincian_pengeluaran.length > 0 ? (
-                    pertemuanTerakhir.rincian_pengeluaran.map((item, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-caption text-ink-700">
-                        <span className="text-ink-600 flex items-center gap-1.5 truncate">
-                          <span className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0" />
-                          <span className="truncate">{item.deskripsi}</span>
-                        </span>
-                        <span className="font-semibold text-danger nums shrink-0 pl-2">
-                          -{formatRupiah(item.nominal)}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="text-caption text-ink-400 italic">Belum ada pengeluaran dicatat (Rp 0)</span>
-                  )}
+                {/* Breakdown Rincian Pemasukan & Pengeluaran */}
+                <div className="flex flex-col gap-2.5 pt-2 border-t border-line/60">
+                  {/* Rincian Pemasukan */}
+                  <div className="rounded-xl bg-emerald-50/50 border border-emerald-100/80 p-2.5 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-emerald-800">
+                      <span className="flex items-center gap-1">
+                        <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-600" />
+                        Rincian Pemasukan
+                      </span>
+                      <span className="nums">+{formatRupiah(pertemuanTerakhir.pemasukan)}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      {pertemuanTerakhir.rincian_pemasukan && pertemuanTerakhir.rincian_pemasukan.length > 0 ? (
+                        pertemuanTerakhir.rincian_pemasukan.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-caption text-ink-700">
+                            <span className="text-ink-600 flex items-center gap-1.5 truncate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                              <span className="truncate">{item.deskripsi}</span>
+                            </span>
+                            <span className="font-semibold text-ink-900 nums shrink-0 pl-2">
+                              {formatRupiah(item.nominal)}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-caption text-ink-400 italic">Belum ada pemasukan</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rincian Pengeluaran */}
+                  <div className="rounded-xl bg-pink-50/50 border border-pink-100/80 p-2.5 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-danger">
+                      <span className="flex items-center gap-1">
+                        <ArrowUpRight className="w-3.5 h-3.5 text-danger" />
+                        Rincian Pengeluaran
+                      </span>
+                      <span className="nums">-{formatRupiah(pertemuanTerakhir.pengeluaran)}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      {pertemuanTerakhir.rincian_pengeluaran && pertemuanTerakhir.rincian_pengeluaran.length > 0 ? (
+                        pertemuanTerakhir.rincian_pengeluaran.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-caption text-ink-700">
+                            <span className="text-ink-600 flex items-center gap-1.5 truncate">
+                              <span className="w-1.5 h-1.5 rounded-full bg-pink-500 shrink-0" />
+                              <span className="truncate">{item.deskripsi}</span>
+                            </span>
+                            <span className="font-semibold text-danger nums shrink-0 pl-2">
+                              -{formatRupiah(item.nominal)}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-caption text-ink-400 italic">Belum ada pengeluaran dicatat (Rp 0)</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 pt-1 border-t border-line/50">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="flex-1 !h-10 font-bold !bg-emerald-600 hover:!bg-emerald-700 !text-white text-xs"
+                    onClick={() => handleOpenRekap(pertemuanTerakhir)}
+                  >
+                    <Share2 className="w-3.5 h-3.5 mr-1.5" />
+                    Bagikan Laporan (WA)
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="!h-10 text-xs font-semibold px-3"
+                    onClick={() => router.push(`/pertemuan/${pertemuanTerakhir.id}`)}
+                  >
+                    Detail
+                  </Button>
                 </div>
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 pt-1 border-t border-line/50">
-              <Button
-                variant="primary"
-                size="sm"
-                className="flex-1 !h-10 font-bold !bg-emerald-600 hover:!bg-emerald-700 !text-white text-xs"
-                onClick={() => handleOpenRekap(pertemuanTerakhir)}
-              >
-                <Share2 className="w-3.5 h-3.5 mr-1.5" />
-                Bagikan Laporan (WA)
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="!h-10 text-xs font-semibold px-3"
-                onClick={() => router.push(`/pertemuan/${pertemuanTerakhir.id}`)}
-              >
-                Detail
-              </Button>
-            </div>
+            )}
           </div>
         </Section>
       )}

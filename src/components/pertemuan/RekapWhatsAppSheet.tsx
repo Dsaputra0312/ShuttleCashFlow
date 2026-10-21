@@ -99,7 +99,7 @@ export function RekapWhatsAppSheet({
             </div>
           )}
 
-          <p className="text-[11px] text-ink-400 text-center">
+          <p className="text-[10px] text-ink-400 text-center">
             Tekan <strong>Kirim ke WA</strong> untuk langsung membuka aplikasi WhatsApp dan memilih grup mabar.
           </p>
         </div>

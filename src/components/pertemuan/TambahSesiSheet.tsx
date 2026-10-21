@@ -379,7 +379,7 @@ export function TambahSesiSheet({
           {/* Rekomendasi Cepat (Hanya pemain yang belum dipilih) */}
           {unselectedRekomendasi.length > 0 && selectedIds.size < 4 && (
             <div className="flex flex-col gap-1.5 pt-0.5">
-              <span className="text-[11px] font-semibold text-ink-500 uppercase tracking-wider">
+              <span className="text-[10px] font-semibold text-ink-500 uppercase tracking-wider">
                 Rekomendasi Pemain (Paling Sedikit Main):
               </span>
               <div className="flex flex-wrap gap-1.5">

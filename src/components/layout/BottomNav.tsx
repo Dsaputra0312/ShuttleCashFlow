@@ -24,84 +24,130 @@ const tabs: NavTab[] = [
 function BottomNavInner() {
   const pathname = usePathname();
 
+  const activeIndex = tabs.findIndex((tab) =>
+    tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href)
+  );
+  const currentActive = activeIndex >= 0 ? activeIndex : 0;
+  // Center percentage of the active tab (5 tabs: 10%, 30%, 50%, 70%, 90%)
+  const activePercent = currentActive * 20 + 10;
+  const ActiveIcon = tabs[currentActive].icon;
+
   return (
-    <>
-      {tabs.map((tab) => {
-        const isActive =
-          tab.href === '/' ? pathname === '/' : pathname.startsWith(tab.href);
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            className={[
-              'group relative flex flex-1 flex-col items-center justify-center py-1 transition-all duration-200 select-none',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 rounded-2xl',
-              'active:scale-95',
-            ].join(' ')}
-            aria-current={isActive ? 'page' : undefined}
+    <div className="relative w-full">
+      {/* 1. Raised Circular Floating Button (Outside overflow-hidden so it elevates above) */}
+      <div
+        className="pointer-events-none absolute -top-4.5 z-30 transition-all duration-300 ease-out"
+        style={{
+          left: `${activePercent}%`,
+          transform: 'translateX(-50%)',
+        }}
+      >
+        <div className="w-12 h-12 rounded-full bg-white shadow-[0_8px_22px_rgba(40,64,143,0.22)] border border-line/60 flex items-center justify-center text-primary-700">
+          <AppIcon
+            icon={ActiveIcon}
+            size="md"
+            strokeWidth={2.4}
+            className="w-5 h-5 text-primary-700"
+          />
+        </div>
+      </div>
+
+      {/* 2. Main Navbar Bar (overflow-hidden clips the scoop perfectly to rounded-[26px]) */}
+      <div className="relative w-full h-[64px] rounded-[26px] bg-white shadow-[0_12px_36px_rgba(40,64,143,0.12),0_2px_8px_rgba(40,64,143,0.04)] border border-line/60 overflow-hidden flex items-center">
+        {/* Curved Scoop Notch (Cutout dipped in page background color #FEF4F0) */}
+        <div
+          className="pointer-events-none absolute -top-[1px] z-10 transition-all duration-300 ease-out"
+          style={{
+            left: `${activePercent}%`,
+            transform: 'translateX(-50%)',
+            width: '68px',
+            height: '24px',
+          }}
+        >
+          <svg
+            width="68"
+            height="24"
+            viewBox="0 0 68 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-full"
           >
-            {/* Icon container with soft active pill */}
-            <div
-              className={[
-                'relative flex items-center justify-center w-11 h-8 rounded-full transition-all duration-200',
-                isActive
-                  ? 'bg-primary-100 text-primary-700 shadow-xs'
-                  : 'text-ink-400 group-hover:text-ink-900 group-hover:bg-peach-100/60',
-              ].join(' ')}
-            >
-              <AppIcon
-                icon={tab.icon}
-                size="md"
-                strokeWidth={isActive ? 2.25 : 1.75}
-              />
-            </div>
-
-            {/* Label */}
-            <span
-              className={[
-                'text-[11px] leading-tight mt-1 transition-all duration-200',
-                isActive
-                  ? 'text-primary-700 font-bold tracking-tight'
-                  : 'text-ink-400 font-medium group-hover:text-ink-700',
-              ].join(' ')}
-            >
-              {tab.label}
-            </span>
-
-            {/* Sleek active capsule pill indicator below label (matches reference image) */}
-            <span
-              className={[
-                'h-1 rounded-full bg-primary-700 mt-0.5 transition-all duration-200',
-                isActive
-                  ? 'w-4 opacity-100'
-                  : 'w-0 opacity-0',
-              ].join(' ')}
-              aria-hidden="true"
+            {/* Scoop fill matching page canvas background */}
+            <path
+              d="M 0 0 C 17 0, 17 22, 34 22 C 51 22, 51 0, 68 0 Z"
+              fill="#FEF4F0"
             />
-          </Link>
-        );
-      })}
-    </>
+            {/* Outline continuation along curve */}
+            <path
+              d="M 0 0 C 17 0, 17 22, 34 22 C 51 22, 51 0, 68 0"
+              stroke="#F1E4DE"
+              strokeWidth="1.2"
+              fill="none"
+            />
+          </svg>
+        </div>
+
+        {/* 3. Navigation Links (5 tabs) */}
+        <div className="relative z-20 flex w-full h-full items-center justify-between">
+          {tabs.map((tab, idx) => {
+            const isActive = idx === currentActive;
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className="group relative flex flex-1 h-full flex-col items-center justify-end pb-2 pt-2.5 select-none outline-none focus:outline-none"
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {/* Inactive Icon (Faded out when active because raised circular button represents it) */}
+                <div
+                  className={`flex items-center justify-center h-6 mb-1 transition-all duration-200 ${
+                    isActive
+                      ? 'opacity-0 scale-75 pointer-events-none'
+                      : 'opacity-100 scale-100 text-ink-400 group-hover:text-ink-700'
+                  }`}
+                >
+                  <AppIcon
+                    icon={tab.icon}
+                    size="md"
+                    strokeWidth={1.8}
+                    className="w-5 h-5"
+                  />
+                </div>
+
+                {/* Label */}
+                <span
+                  className={`text-[10px] leading-tight transition-colors duration-200 ${
+                    isActive
+                      ? 'text-primary-700 font-bold tracking-tight'
+                      : 'text-ink-400 font-medium group-hover:text-ink-700'
+                  }`}
+                >
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
 function BottomNavFallback() {
   return (
-    <>
+    <div className="relative w-full h-[64px] rounded-[26px] bg-white shadow-card border border-line/60 flex items-center justify-between px-2">
       {tabs.map((tab) => (
-        <Link
+        <div
           key={tab.href}
-          href={tab.href}
-          className="flex flex-1 flex-col items-center justify-center py-1 text-ink-400 font-medium"
+          className="flex flex-1 flex-col items-center justify-center py-2 text-ink-400"
         >
-          <div className="flex items-center justify-center w-11 h-8">
+          <div className="flex items-center justify-center h-6 mb-1">
             <AppIcon icon={tab.icon} size="md" />
           </div>
-          <span className="text-[11px] leading-tight mt-1">{tab.label}</span>
-          <span className="h-1 w-0 mt-0.5" />
-        </Link>
+          <span className="text-[10px] leading-tight">{tab.label}</span>
+        </div>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -109,8 +155,8 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navigasi utama"
-      className="fixed bottom-4 left-1/2 z-30 flex w-[calc(100%-32px)] max-w-[400px] -translate-x-1/2 items-center justify-around rounded-[26px] bg-white/95 backdrop-blur-xl px-2 py-1.5 shadow-[0_12px_36px_rgba(40,64,143,0.16),0_2px_8px_rgba(40,64,143,0.06)] border border-white/80 ring-1 ring-line/70"
-      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 6px)' }}
+      className="fixed bottom-3.5 left-1/2 z-30 w-[calc(100%-28px)] max-w-[390px] -translate-x-1/2"
+      style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}
     >
       <Suspense fallback={<BottomNavFallback />}>
         <BottomNavInner />

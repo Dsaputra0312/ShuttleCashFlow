@@ -427,15 +427,15 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
               <span className="text-caption font-semibold text-emerald-800">
                 Terkumpul
               </span>
-              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-full">
                 {countLunas} Lunas
               </span>
             </div>
             <div className="mt-2.5">
-              <p className="font-heading font-extrabold text-[17px] text-emerald-950 tracking-tight leading-tight">
+              <p className="font-heading font-extrabold text-[15px] text-emerald-950 tracking-tight leading-tight">
                 {formatRupiah(totalTerkumpul)}
               </p>
-              <p className="text-[11px] text-emerald-700/90 mt-1">
+              <p className="text-[10px] text-emerald-700/90 mt-1">
                 {totalKelebihan > 0
                   ? `Tagihan ${formatRupiah(totalTagihanLunas)} + Lebih ${formatRupiah(totalKelebihan)}`
                   : `dari ${formatRupiah(totalTagihan)}`}
@@ -449,15 +449,15 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
               <span className="text-caption font-semibold text-rose-800">
                 Belum Bayar
               </span>
-              <span className="text-[11px] font-bold text-rose-700 bg-rose-100/90 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-bold text-rose-700 bg-rose-100/90 px-2 py-0.5 rounded-full">
                 {countBelumBayar} Orang
               </span>
             </div>
             <div className="mt-2.5">
-              <p className="font-heading font-extrabold text-[17px] text-rose-950 tracking-tight leading-tight">
+              <p className="font-heading font-extrabold text-[15px] text-rose-950 tracking-tight leading-tight">
                 {formatRupiah(totalBelumBayar)}
               </p>
-              <p className="text-[11px] text-rose-700/90 mt-1">
+              <p className="text-[10px] text-rose-700/90 mt-1">
                 {countBelumBayar > 0 ? 'Menunggu penagihan' : 'Semua lunas! 🎉'}
               </p>
             </div>
@@ -546,7 +546,7 @@ export function TagihanTab({ pertemuanId, terkunci, onRefresh }: TagihanTabProps
             >
               <Avatar name={p.nama} size="md" />
               <div className="flex-1 min-w-0">
-                <p className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors truncate text-[15px]">
+                <p className="font-heading font-semibold text-ink-900 group-hover:text-primary-700 transition-colors truncate text-heading">
                   {p.nama}
                 </p>
                 <p className="text-caption text-ink-600 mt-0.5 truncate">
